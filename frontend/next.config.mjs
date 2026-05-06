@@ -2,6 +2,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Allow HMR websocket connections when accessing through tunnels (e.g. Outray, ngrok, Cloudflare)
+  allowedDevOrigins: ['*.outray.app', '*.ngrok-free.app', '*.ngrok.io', '*.trycloudflare.com'],
   turbopack: {
     root: process.cwd(),
   },
