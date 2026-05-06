@@ -76,7 +76,7 @@ if [[ ! -f "$FRONTEND_SERVE/.env" ]]; then
 fi
 
 # startOrRestart: starts the process if it doesn't exist yet, restarts if it does
-pm2 startOrRestart "$FRONTEND_SERVE/ecosystem.config.js" --only celeb-frontend
+pm2 startOrRestart "$FRONTEND_SERVE/ecosystem.config.cjs" --only celeb-frontend
 pm2 save
 
 echo ""
