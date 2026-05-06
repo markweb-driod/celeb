@@ -1,8 +1,8 @@
-# CelebStarsHub — Deployment Guide
+﻿# CelebStarsHub — Deployment Guide
 
-> **Server structure confirmed:** `root@kada:/var/www/html/celeb-backend/backend`  
-> Backend lives at `/var/www/html/celeb-backend/backend/`  
-> Frontend lives at `/var/www/html/celeb-frontend/`
+> **Server:** `root@kada` — both frontend and backend on the **same server**.  
+> Backend path: `/var/www/html/celeb-backend/backend`  
+> Frontend path: `/var/www/html/celeb-frontend`
 
 ---
 
@@ -12,16 +12,17 @@
 Browser
   │
   ▼
-Nginx (port 443)
-  ├── celebstarshub.com      →  Next.js Node process  (127.0.0.1:3010)
-  └── api.celebstarshub.com  →  PHP-FPM / Laravel     (/var/www/html/celeb-backend/backend/public)
+Nginx (port 443) on kada
+  ├── celebstarshub.com      →  Next.js (127.0.0.1:3010)
+  └── api.celebstarshub.com  →  PHP-FPM  (/var/www/html/celeb-backend/backend/public)
+                                          also listens on 127.0.0.1:8080 (internal only)
+                                                    ▲
+                                          Next.js proxies /api/v1/* here
+                                          (no SSL overhead — loopback only)
 ```
 
-Both apps run on **one server** behind Nginx.  
-Other projects are not affected — each has its own `server {}` block and database.  
-Next.js runs as a PM2-managed Node process.  
-Laravel is served by PHP-FPM (shared with your other PHP projects).  
-The queue worker also runs under PM2.
+Next.js proxies `/api/v1/*` to `http://127.0.0.1:8080` internally — never leaves the server.  
+Browsers only ever talk to Nginx on port 443.
 
 ---
 
@@ -49,33 +50,39 @@ GRANT ALL PRIVILEGES ON celebstarshub.* TO 'celebstarshub'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-> This database is isolated from your other projects.
-
 ---
 
 ## 3. Deploy the Laravel backend
 
-### 3a. Upload files to the server
+### 3a. Upload files
 
 ```bash
-# Option A — rsync from local machine
+# From your local machine:
 rsync -avz --exclude='vendor' --exclude='.env' \
   ./backend/ root@kada:/var/www/html/celeb-backend/backend/
-
-# Option B — git clone on the server
-git clone https://github.com/YOUR_ORG/celebstarshub.git /var/www/html/celeb-backend
-# Backend code is inside the backend/ subfolder
 ```
 
-### 3b. Create and fill in .env
+### 3b. Install dependencies and set permissions
 
 ```bash
 cd /var/www/html/celeb-backend/backend
+
+composer install --no-dev --optimize-autoloader --no-interaction
+
+chown -R www-data:www-data /var/www/html/celeb-backend/backend
+chmod -R 755 /var/www/html/celeb-backend/backend
+chmod -R 775 /var/www/html/celeb-backend/backend/storage
+chmod -R 775 /var/www/html/celeb-backend/backend/bootstrap/cache
+```
+
+### 3c. Create and fill in .env
+
+```bash
 cp .env.example .env
 nano .env
 ```
 
-Fill in every `REPLACE_ME` value:
+Fill in every value:
 
 ```dotenv
 APP_KEY=                        # run: php artisan key:generate --show
@@ -102,14 +109,14 @@ MAIL_PASSWORD=...
 MAIL_FROM_ADDRESS=noreply@celebstarshub.com
 ```
 
-### 3c. Run the deploy script
+### 3d. Run the deploy script
 
 ```bash
 cd /var/www/html/celeb-backend/backend
 composer run deploy
 ```
 
-This single command runs (in order):
+This runs in order:
 1. `composer install --no-dev --optimize-autoloader`
 2. `php artisan storage:link --force`
 3. `php artisan migrate --force --graceful`
@@ -120,20 +127,35 @@ This single command runs (in order):
 8. `php artisan view:cache`
 9. `php artisan queue:restart`
 
-### 3d. Set file permissions
-
-```bash
-chown -R www-data:www-data /var/www/html/celeb-backend/backend
-chmod -R 755 /var/www/html/celeb-backend/backend
-chmod -R 775 /var/www/html/celeb-backend/backend/storage
-chmod -R 775 /var/www/html/celeb-backend/backend/bootstrap/cache
-```
-
-### 3e. Nginx config for the Laravel backend
+### 3e. Nginx config for Laravel
 
 Create `/etc/nginx/sites-available/celeb-api`:
 
 ```nginx
+# Internal-only HTTP listener — used by Next.js to proxy /api/v1/* without SSL overhead
+server {
+    listen 127.0.0.1:8080;
+    server_name api.celebstarshub.com;
+
+    root /var/www/html/celeb-backend/backend/public;
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/run/php/php8.2-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+    }
+
+    location ~ /\.(?!well-known).* { deny all; }
+}
+
+# Public HTTPS — for browsers and external tools
 server {
     listen 80;
     server_name api.celebstarshub.com;
@@ -167,9 +189,7 @@ server {
         fastcgi_read_timeout 300;
     }
 
-    location ~ /\.(?!well-known).* {
-        deny all;
-    }
+    location ~ /\.(?!well-known).* { deny all; }
 
     client_max_body_size 50M;
     access_log /var/log/nginx/celeb-api.access.log;
@@ -212,46 +232,43 @@ pm2 startup   # run the printed command to survive reboots
 
 ### 4a. Build locally (on your dev machine)
 
-```bash
-cd frontend
+Edit `frontend/.env.production` first:
 
-# Edit .env.production first — set real values:
-#   BACKEND_URL=https://api.celebstarshub.com
-#   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
-
-npm ci
-npm run build
+```dotenv
+NEXT_PUBLIC_API_BASE_URL=/api/v1
+BACKEND_URL=http://127.0.0.1:8080
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_REPLACE_ME
 ```
 
-### 4b. Assemble the standalone bundle
-
-Next.js standalone does **not** bundle static files — copy them in:
+Then build:
 
 ```bash
-# From the frontend/ directory:
+cd frontend
+npm ci
+npm run build
 cp -r .next/static  .next/standalone/.next/static
 cp -r public        .next/standalone/public
 ```
 
-### 4c. Upload to server
+### 4b. Upload to server
 
 ```bash
 rsync -avz --delete ./frontend/.next/standalone/ root@kada:/var/www/html/celeb-frontend/
 ```
 
-### 4d. Create .env on the server
+### 4c. Create .env on the server
 
 ```bash
 cat > /var/www/html/celeb-frontend/.env << 'EOF'
 NEXT_PUBLIC_API_BASE_URL=/api/v1
-BACKEND_URL=https://api.celebstarshub.com
+BACKEND_URL=http://127.0.0.1:8080
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_REPLACE_ME
 EOF
 ```
 
-> `BACKEND_URL` is server-side only — never exposed to the browser. The Next.js process uses it to proxy `/api/v1/*` requests to Laravel.
+> `BACKEND_URL=http://127.0.0.1:8080` — Next.js proxies API calls to Laravel over loopback. Never leaves the server, no SSL needed.
 
-### 4e. Run frontend with PM2
+### 4d. Run frontend with PM2
 
 ```bash
 cat > /var/www/html/celeb-frontend/ecosystem.config.js << 'EOF'
@@ -277,9 +294,7 @@ pm2 start /var/www/html/celeb-frontend/ecosystem.config.js
 pm2 save
 ```
 
-> Using port **3010** avoids clashing with other Node projects on the server. Change it if 3010 is already taken.
-
-### 4f. Nginx config for the Next.js frontend
+### 4e. Nginx config for Next.js
 
 Create `/etc/nginx/sites-available/celeb-frontend`:
 
@@ -298,7 +313,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/celebstarshub.com/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
 
-    # Serve Next.js static assets directly — no Node process hit needed
+    # Static assets served directly by Nginx
     location /_next/static/ {
         alias /var/www/html/celeb-frontend/.next/static/;
         expires 1y;
@@ -312,7 +327,7 @@ server {
         access_log off;
     }
 
-    # Everything else goes to the Next.js Node process
+    # Everything else to Next.js
     location / {
         proxy_pass         http://127.0.0.1:3010;
         proxy_http_version 1.1;
@@ -343,15 +358,18 @@ certbot --nginx -d celebstarshub.com -d www.celebstarshub.com
 ## 5. Verify everything works
 
 ```bash
-# Backend health check
+# Backend internal check (as Next.js would call it)
+curl -s http://127.0.0.1:8080/api/v1/categories | jq .
+
+# Backend public HTTPS
 curl -s https://api.celebstarshub.com/up
 
-# Test login endpoint
+# Test login
 curl -s -X POST https://api.celebstarshub.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"fan@demo.com","password":"password"}' | jq .access_token
 
-# Frontend → backend proxy
+# Frontend (proxies through Next.js → 127.0.0.1:8080 → Laravel)
 curl -s https://celebstarshub.com/api/v1/categories | jq .
 ```
 
@@ -364,20 +382,20 @@ curl -s https://celebstarshub.com/api/v1/categories | jq .
 ```bash
 cd /var/www/html/celeb-backend/backend
 git pull
-composer run deploy   # install, migrate, recache, queue:restart — all in one
+composer run deploy
 ```
 
 ### Frontend update
 
 ```bash
-# On your local machine:
+# Local machine:
 cd frontend
 npm run build
 cp -r .next/static .next/standalone/.next/static
 cp -r public       .next/standalone/public
 rsync -avz --delete .next/standalone/ root@kada:/var/www/html/celeb-frontend/
 
-# On the server:
+# Server:
 pm2 restart celeb-frontend
 ```
 
@@ -389,10 +407,9 @@ pm2 restart celeb-frontend
 pm2 list                        # all running processes
 pm2 logs celeb-frontend         # tail frontend logs
 pm2 logs celeb-queue            # tail queue worker logs
-pm2 restart celeb-frontend      # zero-downtime restart
+pm2 restart celeb-frontend
 pm2 restart celeb-queue
-pm2 stop all                    # stop everything
-pm2 save                        # persist process list across reboots
+pm2 save                        # persist list across reboots
 ```
 
 ---
@@ -400,7 +417,7 @@ pm2 save                        # persist process list across reboots
 ## 8. Cron — Laravel scheduler
 
 ```bash
-crontab -e   # as www-data user
+crontab -e
 ```
 
 Add:
@@ -413,26 +430,27 @@ Add:
 
 ## 9. Co-existing with other projects
 
-- **Nginx**: each project has its own `server {}` block → no conflicts.
-- **MySQL**: each project has its own database + user → no shared credentials.
-- **PM2**: all Node processes run side-by-side; use different ports (e.g. 3010 for CelebStarsHub, 3011 for the next project).
-- **PHP-FPM**: shared across all PHP projects — no extra pool config needed.
+- **Nginx**: each project has its own `server {}` block — no conflicts.
+- **MySQL**: each project has its own database and user — no shared credentials.
+- **PM2**: run projects on different ports (3010 for CelebStarsHub, 3011+ for others).
+- **PHP-FPM**: shared across all PHP projects — no extra config needed.
 
 ---
 
 ## 10. Quick reference
 
-### Ports used by CelebStarsHub
+### Ports
 
 | Service | Port | Scope |
 |---|---|---|
 | Nginx HTTPS | 443 | Public |
 | Nginx HTTP (redirect) | 80 | Public |
-| Next.js Node process | 3010 | Internal only |
-| Laravel PHP-FPM | Unix socket | Internal only |
-| MySQL | 3306 | Internal only |
+| Next.js Node | 3010 | Internal (127.0.0.1) |
+| Laravel (internal proxy) | 8080 | Internal (127.0.0.1) |
+| Laravel PHP-FPM | Unix socket | Internal |
+| MySQL | 3306 | Internal |
 
-### Server paths
+### Paths
 
 | Component | Path |
 |---|---|
