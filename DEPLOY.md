@@ -1,4 +1,10 @@
-# CelebStarsHub — Deployment Guide
+﻿# CelebStarsHub — Deployment Guide
+
+> **Server structure confirmed:** `root@kada:/var/www/html/celeb-backend/backend`  
+> Backend lives at `/var/www/html/celeb-backend/backend/`  
+> Frontend lives at `/var/www/html/celeb-frontend/`
+
+---
 
 ## Architecture overview
 
@@ -6,15 +12,15 @@
 Browser
   │
   ▼
-[Nginx — celebstarshub.com]          port 443 (HTTPS)
-  ├── /api/v1/*  → PHP-FPM (Laravel) via /var/www/html/celeb-backend/backend/public
-  └── /*         → Next.js (Node)    via http://127.0.0.1:3010
+Nginx (port 443)
+  ├── celebstarshub.com      →  Next.js Node process  (127.0.0.1:3010)
+  └── api.celebstarshub.com  →  PHP-FPM / Laravel     (/var/www/html/celeb-backend/backend/public)
 ```
 
-Both apps live on **one VPS** behind **one Nginx** server.  
-Other projects on the same server are not affected — each gets its own `server {}` block.  
-The Next.js app runs as a persistent process managed by **PM2**.  
-The Laravel app is served by **PHP-FPM** (same as your other PHP projects).  
+Both apps run on **one server** behind Nginx.  
+Other projects are not affected — each has its own `server {}` block and database.  
+Next.js runs as a PM2-managed Node process.  
+Laravel is served by PHP-FPM (shared with your other PHP projects).  
 The queue worker also runs under PM2.
 
 ---
@@ -24,7 +30,7 @@ The queue worker also runs under PM2.
 | Requirement | Minimum |
 |---|---|
 | OS | Ubuntu 22.04 LTS |
-| PHP | 8.2+ with extensions: `pdo_mysql mbstring xml curl zip bcmath` |
+| PHP | 8.2 with `pdo_mysql mbstring xml curl zip bcmath` |
 | Node.js | 20 LTS |
 | MySQL | 8.0+ |
 | Nginx | 1.18+ |
@@ -38,8 +44,8 @@ The queue worker also runs under PM2.
 ```sql
 -- Run as root in MySQL
 CREATE DATABASE celebstarshub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'celeb_user'@'localhost' IDENTIFIED BY 'STRONG_PASSWORD_HERE';
-GRANT ALL PRIVILEGES ON celebstarshub.* TO 'celeb_user'@'localhost';
+CREATE USER 'celebstarshub'@'localhost' IDENTIFIED BY 'STRONG_DB_PASSWORD_HERE';
+GRANT ALL PRIVILEGES ON celebstarshub.* TO 'celebstarshub'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
@@ -49,43 +55,37 @@ FLUSH PRIVILEGES;
 
 ## 3. Deploy the Laravel backend
 
-### 3a. Upload and install
+### 3a. Upload files to the server
 
 ```bash
-# Upload to server (choose one method)
-git clone https://github.com/YOUR_ORG/celeb-backend.git /var/www/html/celeb-backend/backend
-# OR  rsync -avz ./backend/ user@server:/var/www/html/celeb-backend/backend/
+# Option A — rsync from local machine
+rsync -avz --exclude='vendor' --exclude='.env' \
+  ./backend/ user@server:/var/www/html/celeb-backend/backend/
 
-cd /var/www/html/celeb-backend/backend
-
-# Install PHP dependencies (no dev packages in production)
-composer install --no-dev --optimize-autoloader --no-interaction
-
-# Set permissions (adjust www-data to your FPM user)
-chown -R www-data:www-data /var/www/html/celeb-backend/backend
-chmod -R 755 /var/www/html/celeb-backend/backend
-chmod -R 775 /var/www/html/celeb-backend/backend/storage
-chmod -R 775 /var/www/html/celeb-backend/backend/bootstrap/cache
+# Option B — git clone on the server
+git clone https://github.com/YOUR_ORG/celebstarshub.git /var/www/html/celeb-backend
+# Backend code is inside the backend/ subfolder
 ```
 
 ### 3b. Create and fill in .env
 
 ```bash
+cd /var/www/html/celeb-backend/backend
 cp .env.example .env
-nano .env   # fill in ALL the values below
+nano .env
 ```
 
-**Required values to fill in:**
+Fill in every `REPLACE_ME` value:
 
 ```dotenv
-APP_KEY=                    # generate with:  php artisan key:generate --show
+APP_KEY=                        # run: php artisan key:generate --show
 APP_URL=https://api.celebstarshub.com
 FRONTEND_URL=https://celebstarshub.com
 
 DB_HOST=127.0.0.1
 DB_DATABASE=celebstarshub
-DB_USERNAME=celeb_user
-DB_PASSWORD=STRONG_PASSWORD_HERE
+DB_USERNAME=celebstarshub
+DB_PASSWORD=STRONG_DB_PASSWORD_HERE
 
 STRIPE_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
@@ -95,7 +95,8 @@ PUSHER_APP_KEY=...
 PUSHER_APP_SECRET=...
 PUSHER_APP_CLUSTER=mt1
 
-MAIL_HOST=...
+MAIL_HOST=smtp.mailgun.org
+MAIL_PORT=587
 MAIL_USERNAME=...
 MAIL_PASSWORD=...
 MAIL_FROM_ADDRESS=noreply@celebstarshub.com
@@ -104,12 +105,31 @@ MAIL_FROM_ADDRESS=noreply@celebstarshub.com
 ### 3c. Run the deploy script
 
 ```bash
-# This runs: composer install, storage:link, migrate, seed categories,
-# config/route/event/view cache, queue:restart
+cd /var/www/html/celeb-backend/backend
 composer run deploy
 ```
 
-### 3d. Nginx config for the Laravel backend
+This single command runs (in order):
+1. `composer install --no-dev --optimize-autoloader`
+2. `php artisan storage:link --force`
+3. `php artisan migrate --force --graceful`
+4. `php artisan db:seed --class=ServiceCategorySeeder --force`
+5. `php artisan config:cache`
+6. `php artisan route:cache`
+7. `php artisan event:cache`
+8. `php artisan view:cache`
+9. `php artisan queue:restart`
+
+### 3d. Set file permissions
+
+```bash
+chown -R www-data:www-data /var/www/html/celeb-backend/backend
+chmod -R 755 /var/www/html/celeb-backend/backend
+chmod -R 775 /var/www/html/celeb-backend/backend/storage
+chmod -R 775 /var/www/html/celeb-backend/backend/bootstrap/cache
+```
+
+### 3e. Nginx config for the Laravel backend
 
 Create `/etc/nginx/sites-available/celeb-api`:
 
@@ -127,21 +147,20 @@ server {
     root /var/www/html/celeb-backend/backend/public;
     index index.php;
 
-    # SSL — use Certbot / Let's Encrypt
     ssl_certificate     /etc/letsencrypt/live/api.celebstarshub.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/api.celebstarshub.com/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
 
-    # Security headers
     add_header X-Frame-Options "DENY" always;
     add_header X-Content-Type-Options "nosniff" always;
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
 
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }
 
     location ~ \.php$ {
-        fastcgi_pass unix:/run/php/php8.2-fpm.sock;  # adjust PHP version if needed
+        fastcgi_pass unix:/run/php/php8.2-fpm.sock;
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
@@ -161,15 +180,12 @@ server {
 ```bash
 ln -s /etc/nginx/sites-available/celeb-api /etc/nginx/sites-enabled/
 nginx -t && systemctl reload nginx
-
-# Issue SSL certificate
 certbot --nginx -d api.celebstarshub.com
 ```
 
-### 3e. Queue worker via PM2
+### 3f. Queue worker via PM2
 
 ```bash
-# Create PM2 process file
 cat > /var/www/html/celeb-backend/backend/ecosystem.queue.config.js << 'EOF'
 module.exports = {
   apps: [{
@@ -187,35 +203,34 @@ EOF
 
 pm2 start /var/www/html/celeb-backend/backend/ecosystem.queue.config.js
 pm2 save
-pm2 startup   # follow the printed command to make PM2 survive reboots
+pm2 startup   # run the printed command to survive reboots
 ```
 
 ---
 
 ## 4. Deploy the Next.js frontend
 
-### 4a. Build the frontend (on your local machine or a CI server)
+### 4a. Build locally (on your dev machine)
 
 ```bash
 cd frontend
 
-# Fill in .env.production with real values first:
-#   BACKEND_URL=https://api.celebstarshub.com  (or internal IP if same server)
+# Edit .env.production first — set real values:
+#   BACKEND_URL=https://api.celebstarshub.com
 #   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
 
 npm ci
 npm run build
-# Output is in .next/standalone/
 ```
 
 ### 4b. Assemble the standalone bundle
 
-The Next.js standalone build does **not** include static assets — you must copy them manually:
+Next.js standalone does **not** bundle static files — copy them in:
 
 ```bash
-# After npm run build, from the frontend/ directory:
-cp -r .next/static     .next/standalone/.next/static
-cp -r public           .next/standalone/public
+# From the frontend/ directory:
+cp -r .next/static  .next/standalone/.next/static
+cp -r public        .next/standalone/public
 ```
 
 ### 4c. Upload to server
@@ -227,16 +242,14 @@ rsync -avz --delete ./frontend/.next/standalone/ user@server:/var/www/html/celeb
 ### 4d. Create .env on the server
 
 ```bash
-# On the server
 cat > /var/www/html/celeb-frontend/.env << 'EOF'
 NEXT_PUBLIC_API_BASE_URL=/api/v1
-BACKEND_URL=http://127.0.0.1:8000    # internal, if both on same server
-                                      # or https://api.celebstarshub.com if separate
+BACKEND_URL=https://api.celebstarshub.com
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_REPLACE_ME
 EOF
 ```
 
-> `BACKEND_URL` is **never sent to the browser** — it's used by the Next.js server process only to proxy `/api/v1/*` calls server-to-server to Laravel.
+> `BACKEND_URL` is server-side only — never exposed to the browser. The Next.js process uses it to proxy `/api/v1/*` requests to Laravel.
 
 ### 4e. Run frontend with PM2
 
@@ -264,7 +277,7 @@ pm2 start /var/www/html/celeb-frontend/ecosystem.config.js
 pm2 save
 ```
 
-> Port **3010** is used here — change it to any free port. Using a non-standard port (not 3000) avoids conflicts with other Node projects on the server.
+> Using port **3010** avoids clashing with other Node projects on the server. Change it if 3010 is already taken.
 
 ### 4f. Nginx config for the Next.js frontend
 
@@ -285,7 +298,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/celebstarshub.com/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
 
-    # Next.js static assets — serve directly from Nginx (no Node hit needed)
+    # Serve Next.js static assets directly — no Node process hit needed
     location /_next/static/ {
         alias /var/www/html/celeb-frontend/.next/static/;
         expires 1y;
@@ -299,7 +312,7 @@ server {
         access_log off;
     }
 
-    # Everything else — proxy to Next.js Node process
+    # Everything else goes to the Next.js Node process
     location / {
         proxy_pass         http://127.0.0.1:3010;
         proxy_http_version 1.1;
@@ -322,7 +335,6 @@ server {
 ```bash
 ln -s /etc/nginx/sites-available/celeb-frontend /etc/nginx/sites-enabled/
 nginx -t && systemctl reload nginx
-
 certbot --nginx -d celebstarshub.com -d www.celebstarshub.com
 ```
 
@@ -331,16 +343,15 @@ certbot --nginx -d celebstarshub.com -d www.celebstarshub.com
 ## 5. Verify everything works
 
 ```bash
-# Backend health
-curl https://api.celebstarshub.com/up
-# → {"status":"ok"} or HTTP 200
+# Backend health check
+curl -s https://api.celebstarshub.com/up
 
-# Test login
+# Test login endpoint
 curl -s -X POST https://api.celebstarshub.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"fan@demo.com","password":"password"}' | jq .access_token
 
-# Frontend proxying backend correctly
+# Frontend → backend proxy
 curl -s https://celebstarshub.com/api/v1/categories | jq .
 ```
 
@@ -353,20 +364,20 @@ curl -s https://celebstarshub.com/api/v1/categories | jq .
 ```bash
 cd /var/www/html/celeb-backend/backend
 git pull
-composer run deploy   # migrate + recache + queue:restart
+composer run deploy   # install, migrate, recache, queue:restart — all in one
 ```
 
-### Frontend update (rebuild locally, push to server)
+### Frontend update
 
 ```bash
-# Local machine:
+# On your local machine:
 cd frontend
 npm run build
 cp -r .next/static .next/standalone/.next/static
 cp -r public       .next/standalone/public
 rsync -avz --delete .next/standalone/ user@server:/var/www/html/celeb-frontend/
 
-# Server:
+# On the server:
 pm2 restart celeb-frontend
 ```
 
@@ -375,19 +386,24 @@ pm2 restart celeb-frontend
 ## 7. PM2 cheatsheet
 
 ```bash
-pm2 list                    # see all running processes
-pm2 logs celeb-frontend     # tail frontend logs
-pm2 logs celeb-queue        # tail queue worker logs
-pm2 restart celeb-frontend  # restart without downtime
+pm2 list                        # all running processes
+pm2 logs celeb-frontend         # tail frontend logs
+pm2 logs celeb-queue            # tail queue worker logs
+pm2 restart celeb-frontend      # zero-downtime restart
 pm2 restart celeb-queue
-pm2 stop all                # stop everything
+pm2 stop all                    # stop everything
+pm2 save                        # persist process list across reboots
 ```
 
 ---
 
 ## 8. Cron — Laravel scheduler
 
-Add one line to the server's crontab (`crontab -e` as the `www-data` user or root):
+```bash
+crontab -e   # as www-data user
+```
+
+Add:
 
 ```cron
 * * * * * cd /var/www/html/celeb-backend/backend && php artisan schedule:run >> /dev/null 2>&1
@@ -397,19 +413,41 @@ Add one line to the server's crontab (`crontab -e` as the `www-data` user or roo
 
 ## 9. Co-existing with other projects
 
-- Each project gets its own `server {}` block in `/etc/nginx/sites-available/` — they do not interfere.
-- Each project has its own MySQL database and user — no shared credentials.
-- PM2 runs all Node processes side-by-side. Use different ports per project (e.g. 3010 for CelebStarsHub, 3011 for your next project).
-- PHP-FPM is shared across all PHP projects — no extra config needed, Nginx just points each project to the same FPM socket.
+- **Nginx**: each project has its own `server {}` block → no conflicts.
+- **MySQL**: each project has its own database + user → no shared credentials.
+- **PM2**: all Node processes run side-by-side; use different ports (e.g. 3010 for CelebStarsHub, 3011 for the next project).
+- **PHP-FPM**: shared across all PHP projects — no extra pool config needed.
 
 ---
 
-## 10. Quick reference — ports used by CelebStarsHub
+## 10. Quick reference
+
+### Ports used by CelebStarsHub
 
 | Service | Port | Scope |
 |---|---|---|
 | Nginx HTTPS | 443 | Public |
 | Nginx HTTP (redirect) | 80 | Public |
-| Next.js Node process | 3010 | Internal (127.0.0.1 only) |
-| Laravel PHP-FPM | Unix socket | Internal |
-| MySQL | 3306 | Internal |
+| Next.js Node process | 3010 | Internal only |
+| Laravel PHP-FPM | Unix socket | Internal only |
+| MySQL | 3306 | Internal only |
+
+### Server paths
+
+| Component | Path |
+|---|---|
+| Laravel root | `/var/www/html/celeb-backend/backend` |
+| Laravel public | `/var/www/html/celeb-backend/backend/public` |
+| Laravel storage | `/var/www/html/celeb-backend/backend/storage` |
+| Next.js root | `/var/www/html/celeb-frontend` |
+| Next.js static | `/var/www/html/celeb-frontend/.next/static` |
+
+### Demo accounts (staging only — do NOT seed in production)
+
+| Role | Email | Password |
+|---|---|---|
+| Fan | `fan@demo.com` | `password` |
+| Celebrity | `celebrity@demo.com` | `password` |
+| Celebrity | `celebrity2@demo.com` | `password` |
+| Celebrity | `celebrity3@demo.com` | `password` |
+| Celebrity | `celebrity4@demo.com` | `password` |
