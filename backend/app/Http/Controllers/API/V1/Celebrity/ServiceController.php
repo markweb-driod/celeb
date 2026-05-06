@@ -61,6 +61,13 @@ class ServiceController extends Controller
             abort(403);
         }
 
+        // Prevent deletion if orders exist referencing this service
+        if ($service->orders()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete a service that has orders. Set status to paused instead.',
+            ], 422);
+        }
+
         $service->delete();
 
         return response()->json(['message' => 'Service deleted successfully']);
