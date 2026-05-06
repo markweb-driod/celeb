@@ -7,8 +7,10 @@ return [
     | Cross-Origin Resource Sharing (CORS) Configuration
     |--------------------------------------------------------------------------
     |
-    | Allows the Next.js dev server (port 3000) and any localhost origins to
-    | reach the Laravel API. In production, replace '*' with the real domain.
+    | In development: set FRONTEND_URL=http://localhost:3000 (default)
+    | In production:  set FRONTEND_URL=https://celebstarshub.com
+    |
+    | Multiple origins can be comma-separated in FRONTEND_URL.
     |
     */
 
@@ -16,10 +18,9 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-    ],
+    'allowed_origins' => array_filter(
+        array_map('trim', explode(',', env('FRONTEND_URL', 'http://localhost:3000,http://127.0.0.1:3000')))
+    ),
 
     'allowed_origins_patterns' => [],
 
@@ -27,7 +28,7 @@ return [
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    'max_age' => 86400,
 
     'supports_credentials' => false,
 

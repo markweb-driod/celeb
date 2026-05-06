@@ -19,7 +19,7 @@ class RegisterController extends Controller
 
             $user = User::create([
                 'email' => $request->email,
-                'password_hash' => Hash::make($request->password),
+                'password_hash' => $request->password,  // 'hashed' cast handles bcrypt automatically
                 'user_type' => $request->user_type,
                 'status' => 'active',
             ]);
