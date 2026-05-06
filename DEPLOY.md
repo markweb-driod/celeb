@@ -7,7 +7,7 @@ Browser
   │
   ▼
 [Nginx — celebstarshub.com]          port 443 (HTTPS)
-  ├── /api/v1/*  → PHP-FPM (Laravel) via /var/www/celeb-backend/public
+  ├── /api/v1/*  → PHP-FPM (Laravel) via /var/www/html/celeb-backend/backend/public
   └── /*         → Next.js (Node)    via http://127.0.0.1:3010
 ```
 
@@ -53,19 +53,19 @@ FLUSH PRIVILEGES;
 
 ```bash
 # Upload to server (choose one method)
-git clone https://github.com/YOUR_ORG/celeb-backend.git /var/www/celeb-backend
-# OR  rsync -avz ./backend/ user@server:/var/www/celeb-backend/
+git clone https://github.com/YOUR_ORG/celeb-backend.git /var/www/html/celeb-backend/backend
+# OR  rsync -avz ./backend/ user@server:/var/www/html/celeb-backend/backend/
 
-cd /var/www/celeb-backend
+cd /var/www/html/celeb-backend/backend
 
 # Install PHP dependencies (no dev packages in production)
 composer install --no-dev --optimize-autoloader --no-interaction
 
 # Set permissions (adjust www-data to your FPM user)
-chown -R www-data:www-data /var/www/celeb-backend
-chmod -R 755 /var/www/celeb-backend
-chmod -R 775 /var/www/celeb-backend/storage
-chmod -R 775 /var/www/celeb-backend/bootstrap/cache
+chown -R www-data:www-data /var/www/html/celeb-backend/backend
+chmod -R 755 /var/www/html/celeb-backend/backend
+chmod -R 775 /var/www/html/celeb-backend/backend/storage
+chmod -R 775 /var/www/html/celeb-backend/backend/bootstrap/cache
 ```
 
 ### 3b. Create and fill in .env
@@ -124,7 +124,7 @@ server {
     listen 443 ssl http2;
     server_name api.celebstarshub.com;
 
-    root /var/www/celeb-backend/public;
+    root /var/www/html/celeb-backend/backend/public;
     index index.php;
 
     # SSL — use Certbot / Let's Encrypt
@@ -170,13 +170,13 @@ certbot --nginx -d api.celebstarshub.com
 
 ```bash
 # Create PM2 process file
-cat > /var/www/celeb-backend/ecosystem.queue.config.js << 'EOF'
+cat > /var/www/html/celeb-backend/backend/ecosystem.queue.config.js << 'EOF'
 module.exports = {
   apps: [{
     name: 'celeb-queue',
     script: 'php',
     args: 'artisan queue:work --sleep=3 --tries=3 --max-time=3600',
-    cwd: '/var/www/celeb-backend',
+    cwd: '/var/www/html/celeb-backend/backend',
     autorestart: true,
     watch: false,
     max_restarts: 10,
@@ -185,7 +185,7 @@ module.exports = {
 }
 EOF
 
-pm2 start /var/www/celeb-backend/ecosystem.queue.config.js
+pm2 start /var/www/html/celeb-backend/backend/ecosystem.queue.config.js
 pm2 save
 pm2 startup   # follow the printed command to make PM2 survive reboots
 ```
@@ -221,14 +221,14 @@ cp -r public           .next/standalone/public
 ### 4c. Upload to server
 
 ```bash
-rsync -avz --delete ./frontend/.next/standalone/ user@server:/var/www/celeb-frontend/
+rsync -avz --delete ./frontend/.next/standalone/ user@server:/var/www/html/celeb-frontend/
 ```
 
 ### 4d. Create .env on the server
 
 ```bash
 # On the server
-cat > /var/www/celeb-frontend/.env << 'EOF'
+cat > /var/www/html/celeb-frontend/.env << 'EOF'
 NEXT_PUBLIC_API_BASE_URL=/api/v1
 BACKEND_URL=http://127.0.0.1:8000    # internal, if both on same server
                                       # or https://api.celebstarshub.com if separate
@@ -241,13 +241,13 @@ EOF
 ### 4e. Run frontend with PM2
 
 ```bash
-cat > /var/www/celeb-frontend/ecosystem.config.js << 'EOF'
+cat > /var/www/html/celeb-frontend/ecosystem.config.js << 'EOF'
 module.exports = {
   apps: [{
     name: 'celeb-frontend',
     script: 'node',
     args: 'server.js',
-    cwd: '/var/www/celeb-frontend',
+    cwd: '/var/www/html/celeb-frontend',
     autorestart: true,
     watch: false,
     max_restarts: 10,
@@ -260,7 +260,7 @@ module.exports = {
 }
 EOF
 
-pm2 start /var/www/celeb-frontend/ecosystem.config.js
+pm2 start /var/www/html/celeb-frontend/ecosystem.config.js
 pm2 save
 ```
 
@@ -287,14 +287,14 @@ server {
 
     # Next.js static assets — serve directly from Nginx (no Node hit needed)
     location /_next/static/ {
-        alias /var/www/celeb-frontend/.next/static/;
+        alias /var/www/html/celeb-frontend/.next/static/;
         expires 1y;
         add_header Cache-Control "public, immutable";
         access_log off;
     }
 
     location /public/ {
-        alias /var/www/celeb-frontend/public/;
+        alias /var/www/html/celeb-frontend/public/;
         expires 7d;
         access_log off;
     }
@@ -351,7 +351,7 @@ curl -s https://celebstarshub.com/api/v1/categories | jq .
 ### Backend update
 
 ```bash
-cd /var/www/celeb-backend
+cd /var/www/html/celeb-backend/backend
 git pull
 composer run deploy   # migrate + recache + queue:restart
 ```
@@ -364,7 +364,7 @@ cd frontend
 npm run build
 cp -r .next/static .next/standalone/.next/static
 cp -r public       .next/standalone/public
-rsync -avz --delete .next/standalone/ user@server:/var/www/celeb-frontend/
+rsync -avz --delete .next/standalone/ user@server:/var/www/html/celeb-frontend/
 
 # Server:
 pm2 restart celeb-frontend
@@ -390,7 +390,7 @@ pm2 stop all                # stop everything
 Add one line to the server's crontab (`crontab -e` as the `www-data` user or root):
 
 ```cron
-* * * * * cd /var/www/celeb-backend && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /var/www/html/celeb-backend/backend && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 ---
