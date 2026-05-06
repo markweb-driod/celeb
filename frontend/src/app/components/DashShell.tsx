@@ -97,7 +97,7 @@ export default function DashShell({ children, navItems, userName, roleLabel, acc
         }`}
       >
         <div className="flex items-center justify-between border-b border-white/[0.05] px-5 py-5">
-          <Logo size="sm" onClick={() => setDrawerOpen(false)} />
+          <Logo size="sm" />
           <button
             onClick={() => setDrawerOpen(false)}
             className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
