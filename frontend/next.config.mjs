@@ -32,7 +32,9 @@ const nextConfig = {
   },
 
   async rewrites() {
-    // In production, set BACKEND_URL to your API server (e.g. https://api.celebstarshub.com)
+    // All /api/v1/* calls from the browser are proxied server-to-server here.
+    // Set BACKEND_URL in .env.production to the URL the Next.js SERVER can reach
+    // the Laravel backend on (internal IP or public HTTPS — never exposed to browser).
     const backendUrl = process.env.BACKEND_URL ?? 'http://127.0.0.1:8001'
     return [
       {
