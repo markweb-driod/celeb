@@ -15,7 +15,7 @@ class TransactionController extends Controller
         $validated = $request->validate([
             'q'                => ['nullable', 'string', 'max:120'],
             'transaction_type' => ['nullable', Rule::in(['payment', 'refund', 'payout'])],
-            'status'           => ['nullable', Rule::in(['pending', 'completed', 'failed'])],
+            'status'           => ['nullable', Rule::in(['pending', 'pending_confirmation', 'completed', 'failed'])],
             'per_page'         => ['nullable', 'integer', 'between:5,100'],
         ]);
 
@@ -35,16 +35,78 @@ class TransactionController extends Controller
             ->paginate((int) ($validated['per_page'] ?? 25));
 
         $summary = [
-            'total_payments' => (float) Transaction::where('transaction_type', 'payment')->where('status', 'completed')->sum('amount'),
-            'total_refunds'  => (float) Transaction::where('transaction_type', 'refund')->where('status', 'completed')->sum('amount'),
-            'pending_count'  => Transaction::where('status', 'pending')->count(),
-            'failed_count'   => Transaction::where('status', 'failed')->count(),
+            'total_payments'              => (float) Transaction::where('transaction_type', 'payment')->where('status', 'completed')->sum('amount'),
+            'total_refunds'               => (float) Transaction::where('transaction_type', 'refund')->where('status', 'completed')->sum('amount'),
+            'pending_confirmation_count'  => Transaction::where('status', 'pending_confirmation')->count(),
+            'pending_count'               => Transaction::where('status', 'pending')->count(),
+            'failed_count'                => Transaction::where('status', 'failed')->count(),
         ];
 
         return response()->json([
             'transactions' => $transactions,
             'summary'      => $summary,
         ]);
+    }
+
+    public function show(Transaction $transaction)
+    {
+        $transaction->load([
+            'user:id,email',
+            'order:id,order_number,fan_id,celebrity_id,total_amount,status',
+            'order.fan:id,display_name,user_id',
+            'order.fan.user:id,email',
+            'order.celebrity:id,stage_name',
+        ]);
+
+        return response()->json(['transaction' => $transaction]);
+    }
+
+    public function confirm(Request $request, Transaction $transaction)
+    {
+        if ($transaction->status !== 'pending_confirmation') {
+            return response()->json(['message' => 'Transaction is not awaiting confirmation.'], 422);
+        }
+
+        $validated = $request->validate([
+            'admin_note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $transaction->update([
+            'status'       => 'completed',
+            'admin_note'   => $validated['admin_note'] ?? null,
+            'confirmed_by' => auth()->id(),
+            'confirmed_at' => now(),
+        ]);
+
+        // Advance the linked order to confirmed
+        if ($transaction->order && $transaction->order->status === 'awaiting_confirmation') {
+            $transaction->order->update(['status' => 'confirmed']);
+        }
+
+        return response()->json(['message' => 'Payment confirmed.', 'transaction' => $transaction->fresh()]);
+    }
+
+    public function reject(Request $request, Transaction $transaction)
+    {
+        if ($transaction->status !== 'pending_confirmation') {
+            return response()->json(['message' => 'Transaction is not awaiting confirmation.'], 422);
+        }
+
+        $validated = $request->validate([
+            'admin_note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $transaction->update([
+            'status'     => 'failed',
+            'admin_note' => $validated['admin_note'] ?? null,
+        ]);
+
+        // Revert order to pending so fan can retry
+        if ($transaction->order && $transaction->order->status === 'awaiting_confirmation') {
+            $transaction->order->update(['status' => 'pending']);
+        }
+
+        return response()->json(['message' => 'Payment rejected.', 'transaction' => $transaction->fresh()]);
     }
 
     public function payouts(Request $request)
