@@ -57,7 +57,7 @@ const navItems = [
   { href: '/admin/orders',    label: 'Orders',    icon: '📦' },
   { href: '/admin/reports',   label: 'Reports',   icon: '📈' },
   { href: '/admin/chats', label: 'Chats', icon: '💬' },
-  { href: '/admin/control', label: 'Control', icon: 'C' },
+  { href: '/admin/control',   label: 'Control',   icon: '⚙️' },
 ]
 
 export default function AdminControlPage() {
