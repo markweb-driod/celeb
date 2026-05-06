@@ -90,7 +90,7 @@ export default function DashShell({ children, navItems, userName, roleLabel, acc
         }`}
       >
         <div className="flex items-center justify-between border-b border-white/[0.05] px-5 py-5">
-          <Logo size="sm" />
+          <Logo size="sm" href={navItems[0]?.href ?? '/fan/dashboard'} />
           <button
             onClick={() => setDrawerOpen(false)}
             className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
@@ -115,7 +115,7 @@ export default function DashShell({ children, navItems, userName, roleLabel, acc
       {/* ── Desktop sidebar ── */}
       <aside className="hidden w-60 flex-shrink-0 flex-col border-r border-white/[0.05] bg-[#050f17] lg:flex">
         <div className="border-b border-white/[0.05] px-5 py-5">
-          <Logo size="sm" />
+          <Logo size="sm" href={navItems[0]?.href ?? '/fan/dashboard'} />
         </div>
         <div className="border-b border-white/[0.05] px-5 py-4">
           <div className={`mb-1 inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${accent.bg} ${accent.text} ${accent.border}`}>
