@@ -19,14 +19,15 @@ function LoginForm() {
   const [selectedDemo, setSelectedDemo] = useState<string | null>(null)
 
   const demoAccounts = [
-    { label: 'Fan demo', email: 'fan@demo.com' },
-    { label: 'Creator demo', email: 'celebrity@demo.com' },
-    { label: 'Creator demo 2', email: 'celebrity2@demo.com' },
+    { label: 'Fan',       email: 'fan@demo.com',              password: 'password',  badge: 'fan' },
+    { label: 'Creator',   email: 'celebrity@demo.com',        password: 'password',  badge: 'celebrity' },
+    { label: 'Creator 2', email: 'celebrity2@demo.com',       password: 'password',  badge: 'celebrity' },
+    { label: 'Admin',     email: 'admin@celebstarshub.com',   password: 'Admin@1234', badge: 'admin' },
   ]
 
-  const fillDemo = (demoEmail: string) => {
+  const fillDemo = (demoEmail: string, demoPassword: string) => {
     setEmail(demoEmail)
-    setPassword('password')
+    setPassword(demoPassword)
     setErrorMessage('')
     setSelectedDemo(demoEmail)
   }
@@ -125,24 +126,29 @@ function LoginForm() {
 
           {/* Demo accounts */}
           <div className="mb-5 rounded-xl border border-amber/30 bg-amber/[0.08] px-4 py-3">
-            <div className="mb-2.5 flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-lt">Demo login details</p>
-              <span className="text-[11px] text-slate-400">Password: <span className="font-semibold text-white">password</span></span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
+            <p className="mb-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-amber-lt">Demo accounts — click to fill</p>
+            <div className="grid grid-cols-2 gap-2">
               {demoAccounts.map((account) => (
                 <button
                   key={account.email}
                   type="button"
-                  onClick={() => fillDemo(account.email)}
+                  onClick={() => fillDemo(account.email, account.password)}
                   className={`rounded-lg border px-2.5 py-2 text-left text-xs transition ${
                     selectedDemo === account.email
                       ? 'border-amber/60 bg-amber/[0.13] ring-1 ring-amber/30'
                       : 'border-white/10 bg-white/[0.04] hover:border-amber/40 hover:bg-white/[0.07]'
                   }`}
                 >
-                  <p className="font-semibold text-white">{account.label}</p>
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="font-semibold text-white">{account.label}</p>
+                    <span className={`rounded px-1 py-0.5 text-[9px] font-bold uppercase ${
+                      account.badge === 'admin' ? 'bg-red-500/20 text-red-400' :
+                      account.badge === 'celebrity' ? 'bg-mint/10 text-mint-soft' :
+                      'bg-blue-500/10 text-blue-400'
+                    }`}>{account.badge}</span>
+                  </div>
                   <p className="mt-0.5 truncate text-[10px] text-slate-400">{account.email}</p>
+                  <p className="mt-0.5 text-[10px] text-slate-500">pw: <span className="text-slate-300">{account.password}</span></p>
                   {selectedDemo === account.email && (
                     <p className="mt-1 text-[10px] font-semibold text-amber">✓ filled</p>
                   )}
