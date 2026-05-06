@@ -16,6 +16,7 @@ use App\Http\Controllers\API\V1\Admin\TransactionController;
 use App\Http\Controllers\API\V1\CelebrityController;
 use App\Http\Controllers\API\V1\Admin\UserManagementController;
 use App\Http\Controllers\API\V1\Chat\ConversationController;
+use App\Http\Controllers\API\V1\PaymentController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -37,6 +38,7 @@ Route::prefix('v1')->group(function () {
     Route::get('categories', [CategoryController::class, 'index']);
     Route::get('celebrities', [CelebrityController::class, 'index']);
     Route::get('celebrities/{celebrity}', [CelebrityController::class, 'show']);
+    Route::get('payment-methods', [PaymentController::class, 'methods']);
 
     // Protected Routes
     Route::middleware('auth:sanctum')->group(function () {
@@ -104,7 +106,14 @@ Route::prefix('v1')->group(function () {
 
             // Transactions & payouts
             Route::get('transactions', [TransactionController::class, 'index']);
+            Route::get('transactions/{transaction}', [TransactionController::class, 'show']);
+            Route::post('transactions/{transaction}/confirm', [TransactionController::class, 'confirm']);
+            Route::post('transactions/{transaction}/reject', [TransactionController::class, 'reject']);
             Route::get('payouts', [TransactionController::class, 'payouts']);
+
+            // Payment methods admin config
+            Route::get('payments/methods', [PaymentConfigController::class, 'showMethods']);
+            Route::put('payments/methods', [PaymentConfigController::class, 'updateMethods']);
 
             // Analytics
             Route::get('analytics', [AnalyticsController::class, 'index']);
