@@ -44,10 +44,10 @@ type Message = {
 }
 
 const navItems = [
-  { href: '/admin/dashboard', label: 'Overview', icon: 'A' },
-  { href: '/admin/users', label: 'Users', icon: 'U' },
-  { href: '/admin/orders', label: 'Orders', icon: 'O' },
-  { href: '/admin/reports', label: 'Reports', icon: 'R' },
+  { href: '/admin/dashboard', label: 'Overview',  icon: '📊' },
+  { href: '/admin/users',     label: 'Users',     icon: '👥' },
+  { href: '/admin/orders',    label: 'Orders',    icon: '📦' },
+  { href: '/admin/reports',   label: 'Reports',   icon: '📈' },
   { href: '/admin/chats', label: 'Chats', icon: '💬' },
   { href: '/admin/control', label: 'Control', icon: '⚙' },
 ]
