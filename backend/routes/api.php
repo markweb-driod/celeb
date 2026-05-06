@@ -21,8 +21,10 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     // Auth Routes
     Route::prefix('auth')->group(function () {
-        Route::post('register', RegisterController::class);
-        Route::post('login', [LoginController::class, 'login']);
+        Route::middleware('throttle:10,1')->group(function () {
+            Route::post('register', RegisterController::class);
+            Route::post('login', [LoginController::class, 'login']);
+        });
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('logout', [LoginController::class, 'logout']);
             Route::get('me', [LoginController::class, 'user']);
