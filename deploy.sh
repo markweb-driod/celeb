@@ -16,12 +16,24 @@ FRONTEND_SERVE="/var/www/html/celeb-frontend"
 
 echo "===> [1/5] Pull latest code"
 cd "$REPO_DIR"
-git pull origin main
+git fetch origin main
+git reset --hard origin/main
 
 # ── Backend ──────────────────────────────────────────────────────────────────
 
 echo "===> [2/5] Backend — install dependencies"
 cd "$BACKEND_DIR"
+
+# Guard: fail loudly if .env is missing or APP_KEY is blank
+if [[ ! -f ".env" ]]; then
+  echo "ERROR: $BACKEND_DIR/.env does not exist. Create it before deploying."
+  exit 1
+fi
+if ! grep -q '^APP_KEY=base64:' .env; then
+  echo "ERROR: APP_KEY is not set in .env. Run: php artisan key:generate"
+  exit 1
+fi
+
 composer install --no-dev --optimize-autoloader --no-interaction
 
 echo "===> [3/5] Backend — permissions + migrate + cache"
