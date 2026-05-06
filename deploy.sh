@@ -24,7 +24,12 @@ echo "===> [2/5] Backend — install dependencies"
 cd "$BACKEND_DIR"
 composer install --no-dev --optimize-autoloader --no-interaction
 
-echo "===> [3/5] Backend — migrate + cache"
+echo "===> [3/5] Backend — permissions + migrate + cache"
+# Ensure PHP-FPM (www-data) can write after git pull changes file ownership
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
+
+php artisan storage:link --force
 php artisan migrate --force --graceful
 php artisan config:cache
 php artisan route:cache
