@@ -86,7 +86,6 @@ export default function Logo({
 
   const inner = (
     <span className={`inline-flex select-none items-center ${gap} ${className}`}>
-      <LogoMark size={size} />
       {showText && (
         <span
           className={`font-display ${text} font-extrabold leading-none tracking-tight ${textClass}`}
