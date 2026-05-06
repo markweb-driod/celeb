@@ -98,7 +98,7 @@ export default function FanDashboardPage() {
                 <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{displayName}</h1>
               </div>
             </div>
-            <Link href="/" className="btn-primary rounded-xl px-5 py-2.5 text-sm font-semibold">Browse talents →</Link>
+            <Link href="/fan/explore" className="btn-primary rounded-xl px-5 py-2.5 text-sm font-semibold">Browse talents →</Link>
           </div>
 
           {/* Stats */}
