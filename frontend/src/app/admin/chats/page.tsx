@@ -6,6 +6,7 @@ import DashShell from '../../components/DashShell'
 import { AUTH_TOKEN_KEY, api, getApiErrorMessage } from '../../lib/api'
 import { getEcho, disconnectEcho } from '../../lib/echo'
 import { AuthUser } from '../../lib/types'
+import { ADMIN_NAV } from '../nav'
 
 type ConvUser = {
   email: string
@@ -42,15 +43,6 @@ type Message = {
   created_at: string
   sender: { email: string; user_type: string }
 }
-
-const navItems = [
-  { href: '/admin/dashboard', label: 'Overview',  icon: '📊' },
-  { href: '/admin/users',     label: 'Users',     icon: '👥' },
-  { href: '/admin/orders',    label: 'Orders',    icon: '📦' },
-  { href: '/admin/reports',   label: 'Reports',   icon: '📈' },
-  { href: '/admin/chats', label: 'Chats', icon: '💬' },
-  { href: '/admin/control', label: 'Control', icon: '⚙' },
-]
 
 const STATUS_COLORS: Record<string, string> = {
   active: 'text-green-400 border-green-500/40 bg-green-500/10',
@@ -157,13 +149,13 @@ export default function AdminChatsPage() {
   }
 
   if (loading) return (
-    <DashShell navItems={navItems} userName="Admin" roleLabel="Admin" accentColor="amber">
+    <DashShell navItems={ADMIN_NAV} userName="Admin" roleLabel="Admin" accentColor="amber">
       <div className="flex h-40 items-center justify-center text-slate-400">Loading...</div>
     </DashShell>
   )
 
   return (
-    <DashShell navItems={navItems} userName={user?.email ?? 'Admin'} roleLabel="Admin" accentColor="amber">
+    <DashShell navItems={ADMIN_NAV} userName={user?.email ?? 'Admin'} roleLabel="Admin" accentColor="amber">
       {error && <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">{error}</div>}
 
       <div className="grid gap-4 lg:grid-cols-[340px_1fr]">

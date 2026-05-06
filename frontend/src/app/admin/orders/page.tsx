@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import DashShell from '../../components/DashShell'
 import { AUTH_TOKEN_KEY, api, getApiErrorMessage } from '../../lib/api'
 import { AuthUser } from '../../lib/types'
+import { ADMIN_NAV } from '../nav'
 
 type AdminOrder = {
   id: number
@@ -23,14 +24,6 @@ type OrdersResponse = {
     data: AdminOrder[]
   }
 }
-
-const navItems = [
-  { href: '/admin/dashboard', label: 'Overview',  icon: '📊' },
-  { href: '/admin/users',     label: 'Users',     icon: '👥' },
-  { href: '/admin/orders',    label: 'Orders',    icon: '📦' },
-  { href: '/admin/reports',   label: 'Reports',   icon: '📈' },
-  { href: '/admin/control', label: 'Control', icon: 'C' },
-]
 
 const statusClass: Record<string, string> = {
   pending: 'border-amber/30 bg-amber/10 text-amber',
@@ -76,7 +69,7 @@ export default function AdminOrdersPage() {
   }, [router])
 
   return (
-    <DashShell navItems={navItems} userName={user?.email ?? 'Admin'} roleLabel="Admin" accentColor="amber">
+    <DashShell navItems={ADMIN_NAV} userName={user?.email ?? 'Admin'} roleLabel="Admin" accentColor="amber">
       {loading ? (
         <div className="flex h-40 items-center justify-center text-slate-400">Loading...</div>
       ) : error ? (

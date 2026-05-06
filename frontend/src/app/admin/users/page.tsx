@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import DashShell from '../../components/DashShell'
 import { AUTH_TOKEN_KEY, api, getApiErrorMessage } from '../../lib/api'
 import { AuthUser } from '../../lib/types'
+import { ADMIN_NAV } from '../nav'
 
 type ManagedUser = {
   id: number
@@ -25,14 +26,6 @@ type UsersResponse = {
     data: ManagedUser[]
   }
 }
-
-const navItems = [
-  { href: '/admin/dashboard', label: 'Overview',  icon: '📊' },
-  { href: '/admin/users',     label: 'Users',     icon: '👥' },
-  { href: '/admin/orders',    label: 'Orders',    icon: '📦' },
-  { href: '/admin/reports',   label: 'Reports',   icon: '📈' },
-  { href: '/admin/control',   label: 'Control',   icon: '⚙️' },
-]
 
 export default function AdminUsersPage() {
   const router = useRouter()
@@ -113,7 +106,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <DashShell navItems={navItems} userName={user?.email ?? 'Admin'} roleLabel="Admin" accentColor="amber">
+    <DashShell navItems={ADMIN_NAV} userName={user?.email ?? 'Admin'} roleLabel="Admin" accentColor="amber">
       {loading ? (
         <div className="flex h-40 items-center justify-center text-slate-400">Loading...</div>
       ) : error ? (

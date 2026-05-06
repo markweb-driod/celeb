@@ -5,19 +5,12 @@ import { useRouter } from 'next/navigation'
 import DashShell from '../../components/DashShell'
 import { AUTH_TOKEN_KEY, api, getApiErrorMessage } from '../../lib/api'
 import { AuthUser } from '../../lib/types'
+import { ADMIN_NAV } from '../nav'
 
 type ReportsResponse = {
   monthly_revenue: Array<{ month: string; payments: number; refunds: number; net: number }>
   top_creators: Array<{ id: number; stage_name: string; email: string | null; completed_orders: number; completed_revenue: number }>
 }
-
-const navItems = [
-  { href: '/admin/dashboard', label: 'Overview',  icon: '📊' },
-  { href: '/admin/users',     label: 'Users',     icon: '👥' },
-  { href: '/admin/orders',    label: 'Orders',    icon: '📦' },
-  { href: '/admin/reports',   label: 'Reports',   icon: '📈' },
-  { href: '/admin/control',   label: 'Control',   icon: '⚙️' },
-]
 
 export default function AdminReportsPage() {
   const router = useRouter()
@@ -57,7 +50,7 @@ export default function AdminReportsPage() {
   }, [router])
 
   return (
-    <DashShell navItems={navItems} userName={user?.email ?? 'Admin'} roleLabel="Admin" accentColor="amber">
+    <DashShell navItems={ADMIN_NAV} userName={user?.email ?? 'Admin'} roleLabel="Admin" accentColor="amber">
       {loading ? (
         <div className="flex h-40 items-center justify-center text-slate-400">Loading...</div>
       ) : error ? (
