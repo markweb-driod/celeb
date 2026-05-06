@@ -378,26 +378,52 @@ curl -s https://celebstarshub.com/api/v1/categories | jq .
 
 ## 6. Re-deploy
 
-### Backend
+Everything is deployed from GitHub with a single command:
 
 ```bash
-cd /var/www/html/celeb-backend/backend
-git pull
-composer run deploy
+ssh root@kada "bash /var/www/html/celeb-backend/deploy.sh"
 ```
 
-### Frontend
+The script (lives at repo root as `deploy.sh`):
+1. `git pull` in `/var/www/html/celeb-backend` (the cloned monorepo)
+2. `composer install` + migrate + cache artisan commands
+3. `npm ci && npm run build` in the frontend source
+4. `rsync` the standalone output to `/var/www/html/celeb-frontend`
+5. `pm2 restart celeb-frontend`
+
+### First-time server setup (clone)
 
 ```bash
-# Local machine:
-cd frontend
-npm run build
-cp -r .next/static .next/standalone/.next/static
-cp -r public       .next/standalone/public
-rsync -avz --delete .next/standalone/ root@kada:/var/www/html/celeb-frontend/
+# On server — clone repo into the correct parent directory
+cd /var/www/html
+git clone git@github.com:YOU/celebstarshub.git celeb-backend
 
-# Server:
-pm2 restart celeb-frontend
+# Backend .env (copy example, then fill in values)
+cp /var/www/html/celeb-backend/backend/.env.example \
+   /var/www/html/celeb-backend/backend/.env
+nano /var/www/html/celeb-backend/backend/.env
+
+# Frontend .env (served from standalone dir, not source)
+cat > /var/www/html/celeb-frontend/.env << 'EOF'
+NEXT_PUBLIC_API_BASE_URL=/api/v1
+BACKEND_URL=http://127.0.0.1:8080
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_REPLACE_ME
+EOF
+
+# Then run the first deploy
+bash /var/www/html/celeb-backend/deploy.sh
+```
+
+### Local workflow
+
+```bash
+# Make changes locally, then:
+git add .
+git commit -m "your change"
+git push
+
+# Then deploy to server:
+ssh root@kada "bash /var/www/html/celeb-backend/deploy.sh"
 ```
 
 ---
