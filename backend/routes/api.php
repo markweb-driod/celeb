@@ -2,12 +2,17 @@
 
 use App\Http\Controllers\API\V1\Auth\LoginController;
 use App\Http\Controllers\API\V1\Auth\RegisterController;
+use App\Http\Controllers\API\V1\Admin\AnalyticsController;
+use App\Http\Controllers\API\V1\Admin\AuditController;
+use App\Http\Controllers\API\V1\Admin\CelebrityManagementController;
 use App\Http\Controllers\API\V1\Admin\ChatSupervisionController;
 use App\Http\Controllers\API\V1\CategoryController;
 use App\Http\Controllers\API\V1\Admin\CmsController as AdminCmsController;
 use App\Http\Controllers\API\V1\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\API\V1\Admin\FanManagementController;
 use App\Http\Controllers\API\V1\Admin\PaymentConfigController;
 use App\Http\Controllers\API\V1\Admin\PricingController;
+use App\Http\Controllers\API\V1\Admin\TransactionController;
 use App\Http\Controllers\API\V1\CelebrityController;
 use App\Http\Controllers\API\V1\Admin\UserManagementController;
 use App\Http\Controllers\API\V1\Chat\ConversationController;
