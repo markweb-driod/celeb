@@ -8,7 +8,6 @@ use App\Models\CelebrityProfile;
 use App\Models\FanProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class RegisterController extends Controller
