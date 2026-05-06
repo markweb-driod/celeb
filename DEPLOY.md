@@ -51,21 +51,30 @@ FLUSH PRIVILEGES;
 
 ## 3. Backend — Laravel
 
-### 3a. Upload files
+### 3a. Get code on server
+
+The repo lives at `/var/www/html/celeb-backend` (monorepo root).
+Files are already present on the server — connect the directory to GitHub:
 
 ```bash
-# From your local machine (Windows):
-rsync -avz --exclude='vendor' --exclude='.env' \
-  ./backend/ root@kada:/var/www/html/celeb-backend/backend/
+cd /var/www/html/celeb-backend
+
+git init
+git remote add origin git@github.com:YOU/celebstarshub.git
+
+# Add GitHub's deploy key first (see section 6), then:
+git fetch origin main
+git reset --hard origin/main   # safe: .env is gitignored, won't be touched
 ```
 
-### 3b. Install dependencies
+### 3b. Install dependencies & run first deploy
 
 ```bash
 cd /var/www/html/celeb-backend/backend
-
 composer install --no-dev --optimize-autoloader --no-interaction
 ```
+
+Then create `.env` (section 3d) and run the deploy script (section 3e).
 
 ### 3c. Set permissions
 
@@ -208,8 +217,10 @@ certbot --nginx -d api.celebstarshub.com
 
 ### 3g. Queue worker via PM2
 
+> **Note:** The file must use `.cjs` extension because `backend/package.json` has `"type":"module"`.
+
 ```bash
-cat > /var/www/html/celeb-backend/backend/ecosystem.queue.config.js << 'EOF'
+cat > /var/www/html/celeb-backend/backend/ecosystem.queue.config.cjs << 'EOF'
 module.exports = {
   apps: [{
     name: 'celeb-queue',
@@ -224,7 +235,7 @@ module.exports = {
 }
 EOF
 
-pm2 start /var/www/html/celeb-backend/backend/ecosystem.queue.config.js
+pm2 start /var/www/html/celeb-backend/backend/ecosystem.queue.config.cjs
 pm2 save
 pm2 startup   # run the printed command to persist across reboots
 ```
@@ -233,7 +244,11 @@ pm2 startup   # run the printed command to persist across reboots
 
 ## 4. Frontend — Next.js
 
-### 4a. Edit .env.production (local machine, before building)
+The frontend is **built on the server** by `deploy.sh`. You do not build or upload it from your local machine.
+
+### 4a. frontend/.env.production (committed to repo)
+
+This file is baked into the Next.js bundle at build time. `BACKEND_URL` is server-side only:
 
 ```dotenv
 NEXT_PUBLIC_API_BASE_URL=/api/v1
@@ -241,25 +256,12 @@ BACKEND_URL=http://127.0.0.1:8080
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_REPLACE_ME
 ```
 
-### 4b. Build (local machine)
+> `BACKEND_URL` must be the **internal loopback** (`127.0.0.1:8080`), not the public HTTPS URL.
+> Both services are on the same server — no SSL needed for this internal hop.
 
-```bash
-cd frontend
-npm ci
-npm run build
+### 4b. Create .env on server (one time)
 
-# Copy static assets into standalone bundle
-cp -r .next/static  .next/standalone/.next/static
-cp -r public        .next/standalone/public
-```
-
-### 4c. Upload to server
-
-```bash
-rsync -avz --delete ./frontend/.next/standalone/ root@kada:/var/www/html/celeb-frontend/
-```
-
-### 4d. Create .env on server
+This file lives in the **serve directory** (not the source), so it survives deploys:
 
 ```bash
 cat > /var/www/html/celeb-frontend/.env << 'EOF'
@@ -269,10 +271,12 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_REPLACE_ME
 EOF
 ```
 
-### 4e. Run with PM2
+### 4c. Run with PM2 (one time)
+
+> **Note:** `.cjs` extension is required — Next.js `package.json` does not set `"type":"module"` but the ecosystem file must be CommonJS.
 
 ```bash
-cat > /var/www/html/celeb-frontend/ecosystem.config.js << 'EOF'
+cat > /var/www/html/celeb-frontend/ecosystem.config.cjs << 'EOF'
 module.exports = {
   apps: [{
     name: 'celeb-frontend',
@@ -291,7 +295,7 @@ module.exports = {
 }
 EOF
 
-pm2 start /var/www/html/celeb-frontend/ecosystem.config.js
+pm2 start /var/www/html/celeb-frontend/ecosystem.config.cjs
 pm2 save
 ```
 
@@ -384,45 +388,40 @@ Everything is deployed from GitHub with a single command:
 ssh root@kada "bash /var/www/html/celeb-backend/deploy.sh"
 ```
 
-The script (lives at repo root as `deploy.sh`):
-1. `git pull` in `/var/www/html/celeb-backend` (the cloned monorepo)
-2. `composer install` + migrate + cache artisan commands
-3. `npm ci && npm run build` in the frontend source
-4. `rsync` the standalone output to `/var/www/html/celeb-frontend`
-5. `pm2 restart celeb-frontend`
+The script (`deploy.sh` at repo root) does:
+1. `git fetch origin main && git reset --hard origin/main` — clean pull, no conflict errors
+2. Guard: aborts if `backend/.env` is missing or `APP_KEY` is blank
+3. `composer install --no-dev` + `chown/chmod` to fix permissions for PHP-FPM
+4. `php artisan migrate`, `db:seed ServiceCategorySeeder`, `config:cache`, `route:cache`, `event:cache`, `view:cache`, `queue:restart`
+5. `npm ci && npm run build` in the frontend source (`/var/www/html/celeb-backend/frontend`)
+6. `rsync` standalone output → `/var/www/html/celeb-frontend` (skips `.env` and `ecosystem.config.cjs`)
+7. `pm2 startOrRestart` + `pm2 save`
 
-### First-time server setup (files already exist)
-
-The server already has files at `/var/www/html/celeb-backend/{backend,frontend}`.
-Connect the existing directory to GitHub instead of cloning fresh:
+### GitHub SSH deploy key (one time)
 
 ```bash
-cd /var/www/html/celeb-backend
+# On server — generate a key
+ssh-keygen -t ed25519 -C "deploy@kada" -f ~/.ssh/github_deploy -N ""
+cat ~/.ssh/github_deploy.pub
+# Add the printed public key to: GitHub repo → Settings → Deploy keys → Add key
 
-# Init git and point to GitHub
-git init
-git remote add origin git@github.com:YOU/celebstarshub.git
-git fetch origin main
-git reset --hard origin/main    # WARNING: overwrites server files with GitHub copy
-                                 # skip this if server has newer files than GitHub
+# Tell SSH to use it for GitHub
+cat >> ~/.ssh/config << 'EOF'
+Host github.com
+  IdentityFile ~/.ssh/github_deploy
+  StrictHostKeyChecking no
+EOF
 ```
-
-> If the server has the **latest** code (not yet pushed to GitHub), push from local first,
-> then `git fetch && git reset --hard origin/main` on the server.
-
-The `.env` files are gitignored and stay untouched by git operations:
-- `/var/www/html/celeb-backend/backend/.env` — already present ✅
-- `/var/www/html/celeb-frontend/.env` — already present ✅
 
 ### Local workflow
 
 ```bash
-# Make changes locally, then:
+# Make changes locally, commit and push:
 git add .
 git commit -m "your change"
 git push
 
-# Then deploy to server:
+# Deploy to server:
 ssh root@kada "bash /var/www/html/celeb-backend/deploy.sh"
 ```
 

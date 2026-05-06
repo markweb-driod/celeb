@@ -485,7 +485,10 @@ test('Admin cannot initiate payment intent', function () use ($BASE, $aH, $piOrd
 test('Payment intent on non-pending order is rejected (cancel it first)', function () use ($BASE, $newFH, $newCH, $pricedService) {
     // Create order, confirm it, then try payment intent
     if (!$pricedService || !$newFH || !$newCH) throw new RuntimeException('Missing');
-    $r1 = req('POST', "$BASE/orders", ['service_id' => $pricedService['id'], 'customization_data' => []], $newFH);
+    $r1 = req('POST', "$BASE/orders", [
+        'service_id'         => $pricedService['id'],
+        'customization_data' => ['message' => 'PI transition test'],
+    ], $newFH);
     $ord = assertKey(assertStatus($r1, 201), 'order');
 
     // Celebrity confirms it
@@ -746,7 +749,7 @@ section('11. Admin service price override');
 
 test('Admin can override service base_price', function () use ($BASE, $aH, $newService) {
     if (!$newService) throw new RuntimeException('No service');
-    $r = req('PUT', "$BASE/admin/pricing/services/{$newService['id']}", [
+    $r = req('PATCH', "$BASE/admin/pricing/services/{$newService['id']}", [
         'base_price' => 75.00,
         'status'     => 'active',
     ], $aH);
@@ -901,23 +904,42 @@ test('GET /categories has no authentication requirement', function () use ($BASE
 section('15. Service deletion — cleanup');
 // ─────────────────────────────────────────────────────────────────────────────
 
-test('Celebrity can delete own service', function () use ($BASE, $newCH, $pricedService) {
-    if (!$pricedService || !$newCH) throw new RuntimeException('No service to delete');
-    $r = req('DELETE', "$BASE/celebrity/services/{$pricedService['id']}", [], $newCH);
+test('Celebrity can delete own service (no orders)', function () use ($BASE, $newCH, $catId) {
+    if (!$newCH) throw new RuntimeException('No new celeb token');
+    // Create a fresh service with no orders, then delete it
+    $r1 = req('POST', "$BASE/celebrity/services", [
+        'category_id'  => $catId ?? 1,
+        'service_type' => 'video_message',
+        'title'        => 'Deletable Service ' . time(),
+        'description'  => 'Will be deleted in this test',
+        'base_price'   => 5.00,
+        'is_digital'   => true,
+        'requires_booking' => false,
+    ], $newCH);
+    $svc = assertKey(assertStatus($r1, 201), 'service');
+    $r = req('DELETE', "$BASE/celebrity/services/{$svc['id']}", [], $newCH);
     assertStatus($r, 200);
-    // Verify it's gone from their list
+    // Verify gone
     $r2 = req('GET', "$BASE/celebrity/services", [], $newCH);
     $svcs = assertStatus($r2, 200)['services']['data'] ?? assertStatus($r2, 200)['services'] ?? [];
     foreach ($svcs as $s) {
-        if ((int) $s['id'] === (int) $pricedService['id']) {
-            throw new RuntimeException("Service still in list after delete");
+        if ((int) $s['id'] === (int) $svc['id']) {
+            throw new RuntimeException('Service still in list after delete');
         }
     }
 });
 
-test('Main celebrity cannot delete new celebrity\'s service', function () use ($BASE, $cH, $newService) {
-    if (!$newService || !$cH) throw new RuntimeException('Missing');
-    $r = req('DELETE', "$BASE/celebrity/services/{$newService['id']}", [], $cH);
+test('Celebrity cannot delete service that has orders', function () use ($BASE, $newCH, $pricedService) {
+    if (!$pricedService || !$newCH) throw new RuntimeException('Missing');
+    // pricedService has orders created in earlier tests
+    $r = req('DELETE', "$BASE/celebrity/services/{$pricedService['id']}", [], $newCH);
+    assertStatus($r, 422); // FK constraint — should be blocked
+});
+
+test('Main celebrity cannot delete new celebrity\'s service', function () use ($BASE, $cH, $pricedService) {
+    if (!$pricedService || !$cH) throw new RuntimeException('Missing');
+    // $pricedService belongs to newCeleb, $cH is mainCeleb
+    $r = req('DELETE', "$BASE/celebrity/services/{$pricedService['id']}", [], $cH);
     assertStatus($r, 403);
 });
 
