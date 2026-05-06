@@ -1,4 +1,4 @@
-﻿# CelebStarsHub — Deployment Guide
+# CelebStarsHub — Deployment Guide
 
 > **Server structure confirmed:** `root@kada:/var/www/html/celeb-backend/backend`  
 > Backend lives at `/var/www/html/celeb-backend/backend/`  
@@ -60,7 +60,7 @@ FLUSH PRIVILEGES;
 ```bash
 # Option A — rsync from local machine
 rsync -avz --exclude='vendor' --exclude='.env' \
-  ./backend/ user@server:/var/www/html/celeb-backend/backend/
+  ./backend/ root@kada:/var/www/html/celeb-backend/backend/
 
 # Option B — git clone on the server
 git clone https://github.com/YOUR_ORG/celebstarshub.git /var/www/html/celeb-backend
@@ -236,7 +236,7 @@ cp -r public        .next/standalone/public
 ### 4c. Upload to server
 
 ```bash
-rsync -avz --delete ./frontend/.next/standalone/ user@server:/var/www/html/celeb-frontend/
+rsync -avz --delete ./frontend/.next/standalone/ root@kada:/var/www/html/celeb-frontend/
 ```
 
 ### 4d. Create .env on the server
@@ -375,7 +375,7 @@ cd frontend
 npm run build
 cp -r .next/static .next/standalone/.next/static
 cp -r public       .next/standalone/public
-rsync -avz --delete .next/standalone/ user@server:/var/www/html/celeb-frontend/
+rsync -avz --delete .next/standalone/ root@kada:/var/www/html/celeb-frontend/
 
 # On the server:
 pm2 restart celeb-frontend
