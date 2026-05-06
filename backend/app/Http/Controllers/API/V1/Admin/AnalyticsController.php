@@ -111,7 +111,7 @@ class AnalyticsController extends Controller
             'total_celebrities'   => User::where('user_type', 'celebrity')->count(),
             'total_fans'          => User::where('user_type', 'fan')->count(),
             'active_celebrities'  => CelebrityProfile::whereHas('user', fn ($q) => $q->where('status', 'active'))->count(),
-            'verified_celebrities' => CelebrityProfile::where('verification_status', 'approved')->count(),
+            'verified_celebrities' => CelebrityProfile::where('verification_status', 'verified')->count(),
         ];
 
         return response()->json([

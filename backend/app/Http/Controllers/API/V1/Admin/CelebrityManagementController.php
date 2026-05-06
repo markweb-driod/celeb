@@ -15,7 +15,7 @@ class CelebrityManagementController extends Controller
         $validated = $request->validate([
             'q'                   => ['nullable', 'string', 'max:120'],
             'category'            => ['nullable', 'string', 'max:100'],
-            'verification_status' => ['nullable', Rule::in(['pending', 'approved', 'rejected'])],
+            'verification_status' => ['nullable', Rule::in(['pending', 'verified', 'rejected'])],
             'is_featured'         => ['nullable', 'boolean'],
             'per_page'            => ['nullable', 'integer', 'between:5,100'],
         ]);
@@ -65,7 +65,7 @@ class CelebrityManagementController extends Controller
     public function update(Request $request, CelebrityProfile $celebrity)
     {
         $data = $request->validate([
-            'verification_status' => ['nullable', Rule::in(['pending', 'approved', 'rejected'])],
+            'verification_status' => ['nullable', Rule::in(['pending', 'verified', 'rejected'])],
             'is_featured'         => ['nullable', 'boolean'],
             'commission_rate'     => ['nullable', 'numeric', 'between:0,100'],
         ]);
