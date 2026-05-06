@@ -125,7 +125,9 @@ Route::prefix('v1')->group(function () {
         // Shared Protected Routes
         Route::apiResource('orders', \App\Http\Controllers\API\V1\OrderController::class)->only(['index', 'store', 'show']);
         Route::patch('orders/{order}/status', [\App\Http\Controllers\API\V1\OrderController::class, 'updateStatus']);
-        Route::post('orders/{order}/payment-intent', [\App\Http\Controllers\API\V1\OrderController::class, 'createPaymentIntent']);
+        // Payment submission (replaces Stripe payment-intent flow)
+        Route::post('payments/upload-proof', [PaymentController::class, 'uploadProof']);
+        Route::post('orders/{order}/payment/submit', [PaymentController::class, 'submit']);
 
 
     });
