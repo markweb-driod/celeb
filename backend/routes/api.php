@@ -1,0 +1,95 @@
+<?php
+
+use App\Http\Controllers\API\V1\Auth\LoginController;
+use App\Http\Controllers\API\V1\Auth\RegisterController;
+use App\Http\Controllers\API\V1\Admin\ChatSupervisionController;
+use App\Http\Controllers\API\V1\CategoryController;
+use App\Http\Controllers\API\V1\Admin\CmsController as AdminCmsController;
+use App\Http\Controllers\API\V1\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\API\V1\Admin\PaymentConfigController;
+use App\Http\Controllers\API\V1\Admin\PricingController;
+use App\Http\Controllers\API\V1\CelebrityController;
+use App\Http\Controllers\API\V1\Admin\UserManagementController;
+use App\Http\Controllers\API\V1\Chat\ConversationController;
+use Illuminate\Support\Facades\Route;
+
+Route::prefix('v1')->group(function () {
+    // Auth Routes
+    Route::prefix('auth')->group(function () {
+        Route::post('register', RegisterController::class);
+        Route::post('login', [LoginController::class, 'login']);
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::post('logout', [LoginController::class, 'logout']);
+            Route::get('me', [LoginController::class, 'user']);
+        });
+    });
+
+    // Public Routes
+    Route::get('services', [\App\Http\Controllers\API\V1\ServiceController::class, 'index']);
+    Route::get('services/{service}', [\App\Http\Controllers\API\V1\ServiceController::class, 'show']);
+    Route::get('categories', [CategoryController::class, 'index']);
+    Route::get('celebrities', [CelebrityController::class, 'index']);
+    Route::get('celebrities/{celebrity}', [CelebrityController::class, 'show']);
+
+    // Protected Routes
+    Route::middleware('auth:sanctum')->group(function () {
+        
+        Route::middleware('is_celebrity')->prefix('celebrity')->group(function () {
+            Route::get('profile', [\App\Http\Controllers\API\V1\Celebrity\ProfileController::class, 'show']);
+            Route::put('profile', [\App\Http\Controllers\API\V1\Celebrity\ProfileController::class, 'update']);
+            
+            Route::apiResource('services', \App\Http\Controllers\API\V1\Celebrity\ServiceController::class);
+        });
+
+        Route::middleware('is_fan')->prefix('fan')->group(function () {
+            Route::get('profile', [\App\Http\Controllers\API\V1\Fan\ProfileController::class, 'show']);
+            Route::put('profile', [\App\Http\Controllers\API\V1\Fan\ProfileController::class, 'update']);
+        });
+
+        Route::prefix('chat')->group(function () {
+            Route::get('subscriptions', [ConversationController::class, 'subscriptions']);
+            Route::get('conversations', [ConversationController::class, 'index']);
+            Route::post('conversations', [ConversationController::class, 'store']);
+            Route::get('conversations/{conversation}/messages', [ConversationController::class, 'messages']);
+            Route::post('conversations/{conversation}/messages', [ConversationController::class, 'sendMessage']);
+        });
+
+        Route::middleware('is_admin')->prefix('admin')->group(function () {
+            Route::get('overview', [AdminDashboardController::class, 'overview']);
+            Route::get('monitoring', [AdminDashboardController::class, 'monitoring']);
+
+            Route::get('users', [UserManagementController::class, 'index']);
+            Route::patch('users/{user}/status', [UserManagementController::class, 'updateStatus']);
+            Route::patch('users/{user}/commission', [UserManagementController::class, 'updateCommission']);
+
+            Route::get('pricing', [PricingController::class, 'index']);
+            Route::put('pricing/defaults', [PricingController::class, 'updateDefaults']);
+            Route::patch('pricing/services/{service}', [PricingController::class, 'updateServicePrice']);
+
+            Route::get('payments/config', [PaymentConfigController::class, 'show']);
+            Route::put('payments/config', [PaymentConfigController::class, 'update']);
+
+            Route::get('cms/content', [AdminCmsController::class, 'show']);
+            Route::put('cms/content', [AdminCmsController::class, 'update']);
+
+            // Chat supervision
+            Route::get('chats', [ChatSupervisionController::class, 'index']);
+            Route::get('chats/{conversation}/messages', [ChatSupervisionController::class, 'messages']);
+            Route::patch('chats/{conversation}/status', [ChatSupervisionController::class, 'updateStatus']);
+            Route::delete('chats/{conversation}/messages/{message}', [ChatSupervisionController::class, 'deleteMessage']);
+
+            // Pricing rules engine
+            Route::get('pricing/rules', [PricingController::class, 'rules']);
+            Route::post('pricing/rules', [PricingController::class, 'storeRule']);
+            Route::put('pricing/rules/{rule}', [PricingController::class, 'updateRule']);
+            Route::delete('pricing/rules/{rule}', [PricingController::class, 'deleteRule']);
+        });
+
+        // Shared Protected Routes
+        Route::apiResource('orders', \App\Http\Controllers\API\V1\OrderController::class)->only(['index', 'store', 'show']);
+        Route::patch('orders/{order}/status', [\App\Http\Controllers\API\V1\OrderController::class, 'updateStatus']);
+        Route::post('orders/{order}/payment-intent', [\App\Http\Controllers\API\V1\OrderController::class, 'createPaymentIntent']);
+
+
+    });
+});
