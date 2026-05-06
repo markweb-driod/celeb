@@ -16,7 +16,7 @@ FRONTEND_SERVE="/var/www/html/celeb-frontend"
 
 echo "===> [1/5] Pull latest code"
 cd "$REPO_DIR"
-git pull
+git pull origin main
 
 # ── Backend ──────────────────────────────────────────────────────────────────
 
@@ -25,12 +25,14 @@ cd "$BACKEND_DIR"
 composer install --no-dev --optimize-autoloader --no-interaction
 
 echo "===> [3/5] Backend — permissions + migrate + cache"
-# Ensure PHP-FPM (www-data) can write after git pull changes file ownership
-chown -R www-data:www-data storage bootstrap/cache
+# New files from git pull are root-owned; fix so PHP-FPM (www-data) can read/write
+chown -R www-data:www-data .
+chmod -R 755 .
 chmod -R 775 storage bootstrap/cache
 
 php artisan storage:link --force
 php artisan migrate --force --graceful
+php artisan db:seed --class=ServiceCategorySeeder --force
 php artisan config:cache
 php artisan route:cache
 php artisan event:cache
@@ -49,6 +51,8 @@ cp -r .next/static  .next/standalone/.next/static
 cp -r public        .next/standalone/public
 
 echo "===> [5/5] Frontend — deploy standalone + restart PM2"
+mkdir -p "$FRONTEND_SERVE"
+
 # --exclude='.env' and ecosystem.config.js so server-side config is never overwritten
 rsync -a --delete \
   --exclude='.env' \
@@ -59,7 +63,9 @@ if [[ ! -f "$FRONTEND_SERVE/.env" ]]; then
   echo "WARNING: $FRONTEND_SERVE/.env not found — create it before the app will work"
 fi
 
-pm2 restart celeb-frontend
+# startOrRestart: starts the process if it doesn't exist yet, restarts if it does
+pm2 startOrRestart "$FRONTEND_SERVE/ecosystem.config.js" --only celeb-frontend
+pm2 save
 
 echo ""
 echo "Deploy complete!"
