@@ -88,6 +88,27 @@ Route::prefix('v1')->group(function () {
             Route::post('pricing/rules', [PricingController::class, 'storeRule']);
             Route::put('pricing/rules/{rule}', [PricingController::class, 'updateRule']);
             Route::delete('pricing/rules/{rule}', [PricingController::class, 'deleteRule']);
+
+            // Celebrity management
+            Route::get('celebrities', [CelebrityManagementController::class, 'index']);
+            Route::get('celebrities/{celebrity}', [CelebrityManagementController::class, 'show']);
+            Route::patch('celebrities/{celebrity}', [CelebrityManagementController::class, 'update']);
+            Route::patch('celebrities/{celebrity}/user-status', [CelebrityManagementController::class, 'updateUserStatus']);
+
+            // Fan management
+            Route::get('fans', [FanManagementController::class, 'index']);
+            Route::get('fans/{fan}', [FanManagementController::class, 'show']);
+            Route::patch('fans/{fan}/user-status', [FanManagementController::class, 'updateUserStatus']);
+
+            // Transactions & payouts
+            Route::get('transactions', [TransactionController::class, 'index']);
+            Route::get('payouts', [TransactionController::class, 'payouts']);
+
+            // Analytics
+            Route::get('analytics', [AnalyticsController::class, 'index']);
+
+            // Audit log
+            Route::get('audit', [AuditController::class, 'index']);
         });
 
         // Shared Protected Routes
