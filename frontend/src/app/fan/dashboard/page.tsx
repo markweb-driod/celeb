@@ -133,7 +133,7 @@ export default function FanDashboardPage() {
                 <span className="mb-3 text-4xl">📦</span>
                 <p className="font-display text-sm font-semibold text-white">No bookings yet</p>
                 <p className="mt-1 text-xs text-slate-600">Book your first celebrity experience</p>
-                <Link href="/" className="btn-primary mt-4 rounded-xl px-5 py-2 text-xs font-semibold">Explore talents →</Link>
+                <Link href="/fan/explore" className="btn-primary mt-4 rounded-xl px-5 py-2 text-xs font-semibold">Explore talents →</Link>
               </div>
             ) : (
               <div className="divide-y divide-white/[0.04]">
@@ -169,7 +169,7 @@ export default function FanDashboardPage() {
                 <p className="font-display text-base font-bold text-white">Ready for your next experience?</p>
                 <p className="mt-1 text-sm text-slate-500">10,000+ verified celebrities ready to connect with fans like you.</p>
               </div>
-              <Link href="/" className="btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold">Browse now →</Link>
+              <Link href="/fan/explore" className="btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold">Browse now →</Link>
             </div>
           </div>
         </div>

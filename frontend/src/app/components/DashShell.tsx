@@ -60,13 +60,6 @@ export default function DashShell({ children, navItems, userName, roleLabel, acc
         })}
       </ul>
       <div className="mt-2 space-y-0.5 border-t border-white/[0.05] pt-2">
-        <Link
-          href="/"
-          onClick={onNav}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-200"
-        >
-          <span>🏠</span> Back to site
-        </Link>
         <button
           onClick={onLogout}
           className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 transition hover:bg-red-500/10 hover:text-red-300"
