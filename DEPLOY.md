@@ -391,28 +391,28 @@ The script (lives at repo root as `deploy.sh`):
 4. `rsync` the standalone output to `/var/www/html/celeb-frontend`
 5. `pm2 restart celeb-frontend`
 
-### First-time server setup (clone)
+### First-time server setup (files already exist)
+
+The server already has files at `/var/www/html/celeb-backend/{backend,frontend}`.
+Connect the existing directory to GitHub instead of cloning fresh:
 
 ```bash
-# On server — clone repo into the correct parent directory
-cd /var/www/html
-git clone git@github.com:YOU/celebstarshub.git celeb-backend
+cd /var/www/html/celeb-backend
 
-# Backend .env (copy example, then fill in values)
-cp /var/www/html/celeb-backend/backend/.env.example \
-   /var/www/html/celeb-backend/backend/.env
-nano /var/www/html/celeb-backend/backend/.env
-
-# Frontend .env (served from standalone dir, not source)
-cat > /var/www/html/celeb-frontend/.env << 'EOF'
-NEXT_PUBLIC_API_BASE_URL=/api/v1
-BACKEND_URL=http://127.0.0.1:8080
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_REPLACE_ME
-EOF
-
-# Then run the first deploy
-bash /var/www/html/celeb-backend/deploy.sh
+# Init git and point to GitHub
+git init
+git remote add origin git@github.com:YOU/celebstarshub.git
+git fetch origin main
+git reset --hard origin/main    # WARNING: overwrites server files with GitHub copy
+                                 # skip this if server has newer files than GitHub
 ```
+
+> If the server has the **latest** code (not yet pushed to GitHub), push from local first,
+> then `git fetch && git reset --hard origin/main` on the server.
+
+The `.env` files are gitignored and stay untouched by git operations:
+- `/var/www/html/celeb-backend/backend/.env` — already present ✅
+- `/var/www/html/celeb-frontend/.env` — already present ✅
 
 ### Local workflow
 
