@@ -36,7 +36,7 @@ php artisan queue:restart
 
 echo "===> [4/5] Frontend — build"
 cd "$FRONTEND_SRC"
-npm ci --omit=dev
+npm ci
 npm run build
 
 # Copy static assets into standalone bundle (required for Next.js standalone output)
@@ -44,9 +44,12 @@ cp -r .next/static  .next/standalone/.next/static
 cp -r public        .next/standalone/public
 
 echo "===> [5/5] Frontend — deploy standalone + restart PM2"
-rsync -a --delete .next/standalone/ "$FRONTEND_SERVE/"
+# --exclude='.env' and ecosystem.config.js so server-side config is never overwritten
+rsync -a --delete \
+  --exclude='.env' \
+  --exclude='ecosystem.config.js' \
+  .next/standalone/ "$FRONTEND_SERVE/"
 
-# Preserve the .env file that lives in the serve directory
 if [[ ! -f "$FRONTEND_SERVE/.env" ]]; then
   echo "WARNING: $FRONTEND_SERVE/.env not found — create it before the app will work"
 fi
