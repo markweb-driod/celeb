@@ -29,15 +29,32 @@ type PricingRule = {
   is_active: boolean
 }
 
+type PaymentMethod = {
+  label: string
+  type: string
+  enabled: boolean
+  email?: string
+  phone_or_email?: string
+  handle?: string
+  cashtag?: string
+  phone?: string
+  address?: string
+  network?: string
+  supported_brands?: string
+  holder_name?: string
+  instructions?: string
+}
+
+type PaymentMethodsResponse = {
+  payment_methods: Record<string, PaymentMethod>
+}
+
 type PaymentResponse = {
   payment_config: {
-    gateway_mode?: 'test' | 'live'
-    stripe_publishable_key?: string
-    stripe_secret_key?: string
-    stripe_webhook_secret?: string
     payout_schedule?: 'manual' | 'daily' | 'weekly' | 'monthly'
     vat_rate?: number
   }
+  payment_methods: Record<string, PaymentMethod>
 }
 
 type CmsResponse = {
@@ -68,10 +85,11 @@ export default function AdminControlPage() {
   })
 
   const [payments, setPayments] = useState<PaymentResponse['payment_config']>({
-    gateway_mode: 'test',
     payout_schedule: 'weekly',
     vat_rate: 0,
   })
+
+  const [paymentMethods, setPaymentMethods] = useState<Record<string, PaymentMethod>>({})
 
   const [cms, setCms] = useState<CmsResponse['content']>({
     home_hero_title: '',
@@ -110,6 +128,7 @@ export default function AdminControlPage() {
 
         setPricing(pricingRes.data.defaults)
         setPayments(paymentRes.data.payment_config)
+        setPaymentMethods(paymentRes.data.payment_methods ?? {})
         setCms(cmsRes.data.content)
         setRules(rulesRes.data.rules)
       } catch (e) {
@@ -130,6 +149,7 @@ export default function AdminControlPage() {
       await Promise.all([
         api.put('/admin/pricing/defaults', pricing),
         api.put('/admin/payments/config', payments),
+        api.put('/admin/payments/methods', { methods: paymentMethods }),
         api.put('/admin/cms/content', cms),
       ])
 
@@ -215,18 +235,6 @@ export default function AdminControlPage() {
             <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">Payments configuration</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="text-sm text-slate-300">
-                Gateway mode
-                <select
-                  value={payments.gateway_mode ?? 'test'}
-                  onChange={(event) => setPayments((prev) => ({ ...prev, gateway_mode: event.target.value as 'test' | 'live' }))}
-                  className="mt-1 w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-white"
-                >
-                  <option value="test">test</option>
-                  <option value="live">live</option>
-                </select>
-              </label>
-
-              <label className="text-sm text-slate-300">
                 Payout schedule
                 <select
                   value={payments.payout_schedule ?? 'weekly'}
@@ -239,24 +247,78 @@ export default function AdminControlPage() {
                   <option value="monthly">monthly</option>
                 </select>
               </label>
-
-              <label className="text-sm text-slate-300 sm:col-span-2">
-                Stripe publishable key
+              <label className="text-sm text-slate-300">
+                VAT / Tax rate (%)
                 <input
-                  value={payments.stripe_publishable_key ?? ''}
-                  onChange={(event) => setPayments((prev) => ({ ...prev, stripe_publishable_key: event.target.value }))}
+                  type="number"
+                  value={payments.vat_rate ?? 0}
+                  onChange={(event) => setPayments((prev) => ({ ...prev, vat_rate: Number(event.target.value) }))}
                   className="mt-1 w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-white"
                 />
               </label>
+            </div>
+          </section>
 
-              <label className="text-sm text-slate-300 sm:col-span-2">
-                Stripe secret key
-                <input
-                  value={payments.stripe_secret_key ?? ''}
-                  onChange={(event) => setPayments((prev) => ({ ...prev, stripe_secret_key: event.target.value }))}
-                  className="mt-1 w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-white"
-                />
-              </label>
+          <section className="rounded-2xl border border-white/[0.07] bg-[#071e29]/60 p-5">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Payment methods</p>
+            <div className="space-y-4">
+              {Object.entries(paymentMethods).map(([key, method]) => {
+                const credentialFields: { field: keyof PaymentMethod; label: string }[] = []
+                if ('email' in method)          credentialFields.push({ field: 'email', label: 'PayPal email' })
+                if ('phone_or_email' in method) credentialFields.push({ field: 'phone_or_email', label: 'Phone or email' })
+                if ('holder_name' in method)    credentialFields.push({ field: 'holder_name', label: 'Holder name' })
+                if ('cashtag' in method)        credentialFields.push({ field: 'cashtag', label: '$Cashtag' })
+                if ('handle' in method)         credentialFields.push({ field: 'handle', label: '@Handle' })
+                if ('phone' in method)          credentialFields.push({ field: 'phone', label: 'Phone number' })
+                if ('address' in method)        credentialFields.push({ field: 'address', label: 'Wallet address' })
+                if ('network' in method)        credentialFields.push({ field: 'network', label: 'Network' })
+                if ('supported_brands' in method) credentialFields.push({ field: 'supported_brands', label: 'Supported brands' })
+
+                return (
+                  <div key={key} className="rounded-xl border border-white/10 bg-[#05131b] p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-white">{method.label}</p>
+                      <label className="inline-flex cursor-pointer items-center gap-2">
+                        <span className="text-xs text-slate-400">{method.enabled ? 'Enabled' : 'Disabled'}</span>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethods((prev) => ({ ...prev, [key]: { ...prev[key], enabled: !prev[key].enabled } }))}
+                          className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${method.enabled ? 'bg-mint' : 'bg-white/10'}`}
+                        >
+                          <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${method.enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                        </button>
+                      </label>
+                    </div>
+
+                    {method.enabled && (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {credentialFields.map(({ field, label }) => (
+                          <label key={field} className="text-xs text-slate-400">
+                            {label}
+                            <input
+                              value={(method[field] as string) ?? ''}
+                              onChange={(e) => setPaymentMethods((prev) => ({ ...prev, [key]: { ...prev[key], [field]: e.target.value } }))}
+                              className="mt-1 w-full rounded-lg border border-white/10 bg-[#071e29] px-3 py-2 text-sm text-white"
+                            />
+                          </label>
+                        ))}
+                        <label className="text-xs text-slate-400 sm:col-span-2">
+                          Instructions shown to customer
+                          <textarea
+                            rows={2}
+                            value={method.instructions ?? ''}
+                            onChange={(e) => setPaymentMethods((prev) => ({ ...prev, [key]: { ...prev[key], instructions: e.target.value } }))}
+                            className="mt-1 w-full resize-none rounded-lg border border-white/10 bg-[#071e29] px-3 py-2 text-sm text-white"
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+              {Object.keys(paymentMethods).length === 0 && (
+                <p className="text-sm text-slate-500">Loading payment methods…</p>
+              )}
             </div>
           </section>
 
