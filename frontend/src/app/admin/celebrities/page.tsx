@@ -232,12 +232,23 @@ export default function AdminCelebritiesPage() {
 
   const flash = (msg: string) => { setMessage(msg); setTimeout(() => setMessage(''), 3000) }
 
-  const patchCeleb = async (celeb: Celebrity, patch: Partial<{ verification_status: string; is_featured: boolean; commission_rate: number }>) => {
+  const patchCeleb = async (
+    celeb: Celebrity,
+    patch: Partial<{ verification_status: Celebrity['verification_status']; is_featured: boolean; commission_rate: number }>
+  ) => {
     setActionId(celeb.id); setError('')
     try {
       await api.patch(`/admin/celebrities/${celeb.id}`, patch)
       await loadPage(q, filterVerification, page)
-      setArranged((prev) => prev.map((c) => (c.id === celeb.id ? { ...c, ...patch } : c)))
+      setArranged((prev) => prev.map((c) => {
+        if (c.id !== celeb.id) return c
+        return {
+          ...c,
+          ...patch,
+          verification_status: patch.verification_status ?? c.verification_status,
+          commission_rate: patch.commission_rate !== undefined ? String(patch.commission_rate) : c.commission_rate,
+        }
+      }))
       flash('Updated.')
     } catch (e) { setError(getApiErrorMessage(e)) }
     finally { setActionId(null) }
