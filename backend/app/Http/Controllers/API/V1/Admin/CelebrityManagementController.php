@@ -67,12 +67,18 @@ class CelebrityManagementController extends Controller
     public function update(Request $request, CelebrityProfile $celebrity)
     {
         $data = $request->validate([
-            'verification_status' => ['nullable', Rule::in(['pending', 'verified', 'rejected'])],
+            'stage_name'          => ['nullable', 'string', 'max:150'],
+            'bio'                 => ['nullable', 'string', 'max:2000'],
+            'category'            => ['nullable', 'string', 'max:100'],
+            'profile_image_url'   => ['nullable', 'url', 'max:500'],
+            'cover_image_url'     => ['nullable', 'url', 'max:500'],
+            'social_links'        => ['nullable', 'array'],
+            'verification_status' => ['nullable', Rule::in(['pending', 'approved', 'rejected'])],
             'is_featured'         => ['nullable', 'boolean'],
             'commission_rate'     => ['nullable', 'numeric', 'between:0,100'],
         ]);
 
-        $celebrity->update(array_filter($data, fn ($v) => $v !== null));
+        $celebrity->update(array_filter($data, fn ($v) => !is_null($v)));
 
         return response()->json([
             'message'   => 'Celebrity profile updated.',
@@ -89,5 +95,115 @@ class CelebrityManagementController extends Controller
         $celebrity->user()->update(['status' => $data['status']]);
 
         return response()->json(['message' => 'User status updated.']);
+    }
+
+    /* ── Create celebrity ─────────────────────────────────────────────────── */
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'email'               => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password'            => ['required', 'string', 'min:8'],
+            'stage_name'          => ['required', 'string', 'max:150'],
+            'bio'                 => ['nullable', 'string', 'max:2000'],
+            'category'            => ['nullable', 'string', 'max:100'],
+            'commission_rate'     => ['nullable', 'numeric', 'between:0,100'],
+            'verification_status' => ['nullable', Rule::in(['pending', 'approved', 'rejected'])],
+            'is_featured'         => ['nullable', 'boolean'],
+        ]);
+
+        $user = User::create([
+            'email'         => $data['email'],
+            'password_hash' => $data['password'],
+            'user_type'     => 'celebrity',
+            'status'        => 'active',
+        ]);
+
+        $celebrity = CelebrityProfile::create([
+            'user_id'             => $user->id,
+            'stage_name'          => $data['stage_name'],
+            'slug'                => Str::slug($data['stage_name']) . '-' . $user->id,
+            'bio'                 => $data['bio'] ?? null,
+            'category'            => $data['category'] ?? null,
+            'commission_rate'     => $data['commission_rate'] ?? 20,
+            'verification_status' => $data['verification_status'] ?? 'pending',
+            'is_featured'         => $data['is_featured'] ?? false,
+        ]);
+
+        $celebrity->load('user');
+
+        return response()->json(['celebrity' => $celebrity], 201);
+    }
+
+    /* ── Delete celebrity ─────────────────────────────────────────────────── */
+
+    public function destroy(CelebrityProfile $celebrity)
+    {
+        $user = $celebrity->user;
+        $celebrity->delete();
+        $user?->delete();
+
+        return response()->json(['message' => 'Celebrity deleted.']);
+    }
+
+    /* ── Services (payment items) ─────────────────────────────────────────── */
+
+    public function services(CelebrityProfile $celebrity)
+    {
+        $services = $celebrity->services()
+            ->withCount('orders')
+            ->latest()
+            ->get();
+
+        return response()->json(['services' => $services]);
+    }
+
+    public function storeService(Request $request, CelebrityProfile $celebrity)
+    {
+        $data = $request->validate([
+            'title'             => ['required', 'string', 'max:200'],
+            'description'       => ['nullable', 'string', 'max:2000'],
+            'service_type'      => ['required', Rule::in(['video_shoutout', 'live_session', 'exclusive_content', 'meet_and_greet', 'birthday_surprise', 'custom'])],
+            'base_price'        => ['required', 'numeric', 'min:0'],
+            'currency'          => ['nullable', 'string', 'max:3'],
+            'max_delivery_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'status'            => ['nullable', Rule::in(['active', 'inactive', 'draft'])],
+        ]);
+
+        $service = $celebrity->services()->create([
+            ...$data,
+            'slug'     => Str::slug($data['title']) . '-' . time(),
+            'currency' => $data['currency'] ?? 'USD',
+            'status'   => $data['status'] ?? 'active',
+        ]);
+
+        return response()->json(['service' => $service], 201);
+    }
+
+    public function updateService(Request $request, CelebrityProfile $celebrity, Service $service)
+    {
+        abort_if($service->celebrity_id !== $celebrity->id, 404);
+
+        $data = $request->validate([
+            'title'             => ['nullable', 'string', 'max:200'],
+            'description'       => ['nullable', 'string', 'max:2000'],
+            'service_type'      => ['nullable', Rule::in(['video_shoutout', 'live_session', 'exclusive_content', 'meet_and_greet', 'birthday_surprise', 'custom'])],
+            'base_price'        => ['nullable', 'numeric', 'min:0'],
+            'currency'          => ['nullable', 'string', 'max:3'],
+            'max_delivery_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'status'            => ['nullable', Rule::in(['active', 'inactive', 'draft'])],
+        ]);
+
+        $service->update(array_filter($data, fn ($v) => !is_null($v)));
+
+        return response()->json(['service' => $service->fresh()]);
+    }
+
+    public function destroyService(CelebrityProfile $celebrity, Service $service)
+    {
+        abort_if($service->celebrity_id !== $celebrity->id, 404);
+        $service->delete();
+
+        return response()->json(['message' => 'Service deleted.']);
     }
 }
