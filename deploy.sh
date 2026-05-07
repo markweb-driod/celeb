@@ -16,8 +16,8 @@ FRONTEND_SERVE="/var/www/html/celeb-frontend"
 
 echo "===> [1/5] Pull latest code"
 cd "$REPO_DIR"
-git fetch origin main
-git reset --hard origin/main
+git fetch origin
+git reset --hard FETCH_HEAD
 
 # ── Backend ──────────────────────────────────────────────────────────────────
 
