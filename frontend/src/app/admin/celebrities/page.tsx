@@ -13,7 +13,7 @@ type Celebrity = {
   id: number
   stage_name: string
   category: string | null
-  verification_status: 'pending' | 'approved' | 'rejected'
+  verification_status: 'pending' | 'verified' | 'rejected'
   is_featured: boolean
   commission_rate: string
   sort_order: number
@@ -42,7 +42,7 @@ type PagedResponse = {
 /* -- Badge helpers --------------------------------------------------------- */
 
 const verificationClass: Record<string, string> = {
-  approved: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300',
+  verified: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300',
   pending:  'border-amber/30 bg-amber/10 text-amber',
   rejected: 'border-red-400/30 bg-red-500/10 text-red-300',
 }
@@ -143,7 +143,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Verification Status</label>
               <select value={form.verification_status} onChange={(e) => set('verification_status', e.target.value)} className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40">
                 <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
+                <option value="verified">Verified</option>
                 <option value="rejected">Rejected</option>
               </select>
             </div>
@@ -301,7 +301,7 @@ export default function AdminCelebritiesPage() {
   }
 
   const featuredCount = arranged.filter((c) => c.is_featured).length
-  const approvedCount = arranged.filter((c) => c.verification_status === 'approved').length
+  const verifiedCount = arranged.filter((c) => c.verification_status === 'verified').length
   const pendingCount  = arranged.filter((c) => c.verification_status === 'pending').length
 
   return (
@@ -331,7 +331,7 @@ export default function AdminCelebritiesPage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
               { label: 'Total',          value: total || arranged.length, color: 'text-white' },
-              { label: 'Approved',       value: approvedCount,            color: 'text-emerald-400' },
+              { label: 'Verified',       value: verifiedCount,            color: 'text-emerald-400' },
               { label: 'Pending review', value: pendingCount,             color: 'text-amber' },
               { label: 'Featured',       value: featuredCount,            color: 'text-amber' },
             ].map((s) => (
@@ -369,7 +369,7 @@ export default function AdminCelebritiesPage() {
                   className="rounded-xl border border-white/10 bg-[#071e29] px-3 py-2 text-sm text-white">
                   <option value="">All verification</option>
                   <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
+                  <option value="verified">Verified</option>
                   <option value="rejected">Rejected</option>
                 </select>
                 <button onClick={() => { setPage(1); void loadPage(q, filterVerification, 1) }}
@@ -417,10 +417,10 @@ export default function AdminCelebritiesPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1">
-                            {c.verification_status !== 'approved' && (
-                              <button onClick={() => void patchCeleb(c, { verification_status: 'approved' })} disabled={actionId === c.id}
+                            {c.verification_status !== 'verified' && (
+                              <button onClick={() => void patchCeleb(c, { verification_status: 'verified' })} disabled={actionId === c.id}
                                 className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-300 hover:bg-emerald-500/20 disabled:opacity-50">
-                                Approve
+                                Verify
                               </button>
                             )}
                             {c.verification_status !== 'rejected' && (

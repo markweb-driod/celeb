@@ -15,7 +15,7 @@ type CelebrityDetail = {
   slug: string
   bio: string | null
   category: string | null
-  verification_status: 'pending' | 'approved' | 'rejected'
+  verification_status: 'pending' | 'verified' | 'rejected'
   is_featured: boolean
   commission_rate: string
   profile_image_url: string | null
@@ -69,7 +69,7 @@ const SERVICE_TYPES = [
 ]
 
 const verificationClass: Record<string, string> = {
-  approved: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300',
+  verified: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300',
   pending:  'border-amber/30 bg-amber/10 text-amber',
   rejected: 'border-red-400/30 bg-red-500/10 text-red-300',
 }
@@ -611,7 +611,7 @@ export default function AdminCelebrityDetailPage() {
                     className="flex-1 rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40"
                   >
                     <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
+                    <option value="verified">Verified</option>
                     <option value="rejected">Rejected</option>
                   </select>
                   <button
