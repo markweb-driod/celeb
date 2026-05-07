@@ -37,12 +37,12 @@ const fmt = (amount: string, currency: string) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD', minimumFractionDigits: 0 }).format(Number(amount))
 
 const serviceTypeIcon: Record<string, string> = {
-  video_shoutout: '🎬',
-  live_session: '🎤',
-  exclusive_content: '🔒',
-  meet_and_greet: '🤝',
-  birthday_surprise: '🎂',
-  custom: '✨',
+  video_shoutout: 'VID',
+  live_session: 'LIVE',
+  exclusive_content: 'LOCK',
+  meet_and_greet: 'MEET',
+  birthday_surprise: 'BDAY',
+  custom: 'NEW',
 }
 
 function BookingPageContent() {
@@ -122,14 +122,14 @@ function BookingPageContent() {
 
   if (serviceError || !service) return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#030d13] px-4 text-center">
-      <span className="text-5xl">😕</span>
+      <span className="text-5xl">:(</span>
       <p className="font-display text-xl font-bold text-white">Service not found</p>
       <p className="text-sm text-slate-500">{serviceError}</p>
       <Link href="/" className="btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold">Back to home</Link>
     </div>
   )
 
-  const icon = serviceTypeIcon[service.service_type] ?? '✨'
+  const icon = serviceTypeIcon[service.service_type] ?? 'NEW'
   const celeb = service.celebrity_profile
 
   return (
@@ -142,7 +142,7 @@ function BookingPageContent() {
           <Link href="/" className="flex items-center gap-2">
             <Logo size="sm" href={false} />
           </Link>
-          <button onClick={() => router.back()} className="text-xs font-semibold text-slate-500 hover:text-white">← Back</button>
+          <button onClick={() => router.back()} className="text-xs font-semibold text-slate-500 hover:text-white">Back</button>
         </div>
       </header>
 
@@ -178,7 +178,7 @@ function BookingPageContent() {
                     rows={4}
                     className="w-full rounded-xl border border-white/[0.08] bg-[#071e29] px-4 py-3 text-sm text-white placeholder-slate-600 outline-none transition focus:border-mint/40 focus:ring-2 focus:ring-mint/10 resize-none"
                   />
-                  <p className="mt-1 text-[11px] text-slate-600">{`${instructions.length} / 500 characters`}</p>
+                  <p className="mt-1 text-[11px] text-slate-600">{instructions.length + ' of 500 characters'}</p>
                 </div>
 
                 <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-[#071e29]/60 px-4 py-3">
@@ -208,7 +208,7 @@ function BookingPageContent() {
                       className="w-full rounded-xl border border-white/[0.08] bg-[#071e29] px-4 py-3 text-sm text-white placeholder-slate-600 outline-none transition focus:border-mint/40 focus:ring-2 focus:ring-mint/10"
                     />
                   </div>
-                )}
+                      <p className="text-sm font-semibold text-white">Send as a gift</p>
 
                 {submitError && (
                   <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -232,7 +232,7 @@ function BookingPageContent() {
                 </button>
 
                 <p className="text-center text-[11px] text-slate-600">
-                  🔒 Secure checkout · Money-back guarantee · No hidden fees
+                  Secure checkout | Money-back guarantee | No hidden fees
                 </p>
               </form>
             </div>
@@ -259,7 +259,7 @@ function BookingPageContent() {
                       <p className="text-[10px] capitalize text-slate-600">{celeb.category}</p>
                     </div>
                     {celeb.is_verified && (
-                      <span className="ml-auto text-[10px] font-bold text-amber">✓ Verified</span>
+                      <span className="ml-auto text-[10px] font-bold text-amber">Verified</span>
                     )}
                   </div>
                 )}
@@ -282,10 +282,10 @@ function BookingPageContent() {
 
               <div className="rounded-2xl border border-white/[0.06] bg-[#071e29]/50 p-4 space-y-2.5">
                 {[
-                  { icon: '🛡️', text: 'Money-back guarantee if not delivered' },
-                  { icon: '🔒', text: 'Secure manual payment processing' },
-                  { icon: '⭐', text: 'Verified celebrity authenticity' },
-                  { icon: '🔔', text: 'Real-time order status updates' },
+                  { icon: 'SAFE', text: 'Money-back guarantee if not delivered' },
+                  { icon: 'LOCK', text: 'Secure manual payment processing' },
+                  { icon: 'VER', text: 'Verified celebrity authenticity' },
+                  { icon: 'ALRT', text: 'Real-time order status updates' },
                 ].map((g) => (
                   <div key={g.text} className="flex items-center gap-2 text-[11px] text-slate-500">
                     <span>{g.icon}</span>
