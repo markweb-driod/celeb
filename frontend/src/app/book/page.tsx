@@ -61,7 +61,6 @@ function BookingPageContent() {
 
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
-  const [success, setSuccess] = useState<{ orderNumber: string; amount: string } | null>(null)
 
   useEffect(() => {
     if (!serviceId) {
@@ -106,10 +105,8 @@ function BookingPageContent() {
       }
       if (isGift && giftEmail) payload.gift_email = giftEmail.trim()
       const res = await api.post<OrderPayload>('/orders', payload)
-      setSuccess({
-        orderNumber: res.data.order.order_number,
-        amount: fmt(res.data.order.total_amount, service?.currency ?? 'USD'),
-      })
+      // Redirect to payment page immediately after order creation
+      router.push(`/pay/${res.data.order.id}`)
     } catch (e) {
       setSubmitError(getApiErrorMessage(e))
     } finally {
