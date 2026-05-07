@@ -147,29 +147,7 @@ function BookingPageContent() {
       </header>
 
       <div className="mx-auto max-w-4xl px-4 pb-24 pt-10 sm:px-6">
-        {success ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500/30 to-teal-600/20 text-4xl ring-2 ring-emerald-500/30">
-              🎉
-            </div>
-            <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">Booking confirmed!</h1>
-            <p className="mt-3 text-sm text-slate-400">
-              Your order <span className="font-bold text-white">{success.orderNumber}</span> for <span className="font-bold text-amber">{success.amount}</span> has been placed.
-            </p>
-            <p className="mt-2 text-xs text-slate-600">
-              You'll receive updates as the creator works on your experience.
-            </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Link href="/fan/dashboard" className="btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold">
-                View my bookings →
-              </Link>
-              <Link href="/" className="btn-outline rounded-xl px-6 py-2.5 text-sm font-semibold">
-                Back to home
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+        <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
             <div>
               <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">Complete your booking</h1>
               <p className="mt-1 text-sm text-slate-500">Fill in your details and we'll send them to the creator.</p>
@@ -305,7 +283,7 @@ function BookingPageContent() {
               <div className="rounded-2xl border border-white/[0.06] bg-[#071e29]/50 p-4 space-y-2.5">
                 {[
                   { icon: '🛡️', text: 'Money-back guarantee if not delivered' },
-                  { icon: '🔒', text: 'Secure Stripe payment processing' },
+                  { icon: '🔒', text: 'Secure manual payment processing' },
                   { icon: '⭐', text: 'Verified celebrity authenticity' },
                   { icon: '🔔', text: 'Real-time order status updates' },
                 ].map((g) => (
@@ -317,7 +295,7 @@ function BookingPageContent() {
               </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
