@@ -27,6 +27,7 @@ class CelebrityProfile extends Model
         'rating_count',
         'commission_rate',
         'is_featured',
+        'sort_order',
     ];
 
     protected $casts = [
@@ -36,6 +37,7 @@ class CelebrityProfile extends Model
         'rating_count' => 'integer',
         'commission_rate' => 'decimal:2',
         'is_featured' => 'boolean',
+        'sort_order' => 'integer',
     ];
 
     public function toSearchableArray()

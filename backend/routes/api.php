@@ -96,6 +96,7 @@ Route::prefix('v1')->group(function () {
             // Celebrity management
             Route::get('celebrities', [CelebrityManagementController::class, 'index']);
             Route::post('celebrities', [CelebrityManagementController::class, 'store']);
+            Route::post('celebrities/reorder', [CelebrityManagementController::class, 'reorder']);
             Route::get('celebrities/{celebrity}', [CelebrityManagementController::class, 'show']);
             Route::patch('celebrities/{celebrity}', [CelebrityManagementController::class, 'update']);
             Route::patch('celebrities/{celebrity}/user-status', [CelebrityManagementController::class, 'updateUserStatus']);

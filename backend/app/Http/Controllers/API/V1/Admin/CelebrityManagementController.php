@@ -37,6 +37,7 @@ class CelebrityManagementController extends Controller
             ->when($validated['category'] ?? null, fn ($q, $cat) => $q->where('category', $cat))
             ->when($validated['verification_status'] ?? null, fn ($q, $vs) => $q->where('verification_status', $vs))
             ->when(isset($validated['is_featured']), fn ($q) => $q->where('is_featured', $validated['is_featured']))
+            ->orderBy('sort_order', 'asc')
             ->latest('id')
             ->paginate((int) ($validated['per_page'] ?? 20));
 
@@ -76,6 +77,7 @@ class CelebrityManagementController extends Controller
             'verification_status' => ['nullable', Rule::in(['pending', 'approved', 'rejected'])],
             'is_featured'         => ['nullable', 'boolean'],
             'commission_rate'     => ['nullable', 'numeric', 'between:0,100'],
+            'sort_order'          => ['nullable', 'integer', 'min:0'],
         ]);
 
         $celebrity->update(array_filter($data, fn ($v) => !is_null($v)));
@@ -144,6 +146,23 @@ class CelebrityManagementController extends Controller
         $user?->delete();
 
         return response()->json(['message' => 'Celebrity deleted.']);
+    }
+
+    /* ── Bulk reorder ──────────────────────────────────────────────────────── */
+
+    public function reorder(Request $request)
+    {
+        $data = $request->validate([
+            'order'               => ['required', 'array', 'min:1'],
+            'order.*.id'          => ['required', 'integer', 'exists:celebrity_profiles,id'],
+            'order.*.sort_order'  => ['required', 'integer', 'min:0'],
+        ]);
+
+        foreach ($data['order'] as $item) {
+            CelebrityProfile::where('id', $item['id'])->update(['sort_order' => $item['sort_order']]);
+        }
+
+        return response()->json(['message' => 'Display order saved.']);
     }
 
     /* ── Services (payment items) ─────────────────────────────────────────── */
