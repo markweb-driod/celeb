@@ -190,7 +190,7 @@ function BookingPageContent() {
                     <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${isGift ? 'translate-x-4' : 'translate-x-0.5'}`} />
                   </button>
                   <div>
-                    <p className="text-sm font-semibold text-white">Send as a gift 🎁</p>
+                    <p className="text-sm font-semibold text-white">Send as a gift</p>
                     <p className="text-[11px] text-slate-600">Deliver directly to someone else's email</p>
                   </div>
                 </div>
@@ -208,7 +208,7 @@ function BookingPageContent() {
                       className="w-full rounded-xl border border-white/[0.08] bg-[#071e29] px-4 py-3 text-sm text-white placeholder-slate-600 outline-none transition focus:border-mint/40 focus:ring-2 focus:ring-mint/10"
                     />
                   </div>
-                      <p className="text-sm font-semibold text-white">Send as a gift</p>
+                )}
 
                 {submitError && (
                   <div className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -227,7 +227,7 @@ function BookingPageContent() {
                       Placing order...
                     </span>
                   ) : (
-                    `Confirm & Pay ${fmt(service.base_price, service.currency)}`
+                    'Confirm & Pay ' + fmt(service.base_price, service.currency)
                   )}
                 </button>
 
