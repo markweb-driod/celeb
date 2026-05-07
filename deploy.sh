@@ -75,6 +75,28 @@ if [[ ! -f "$FRONTEND_SERVE/.env" ]]; then
   echo "WARNING: $FRONTEND_SERVE/.env not found — create it before the app will work"
 fi
 
+# Bootstrap ecosystem.config.cjs on first deploy (excluded from rsync so it's never overwritten)
+if [[ ! -f "$FRONTEND_SERVE/ecosystem.config.cjs" ]]; then
+  echo "Creating $FRONTEND_SERVE/ecosystem.config.cjs (first-time bootstrap)"
+  cat > "$FRONTEND_SERVE/ecosystem.config.cjs" << 'ECOEOF'
+module.exports = {
+  apps: [{
+    name: 'celeb-frontend',
+    script: 'server.js',
+    cwd: '/var/www/html/celeb-frontend',
+    autorestart: true,
+    watch: false,
+    max_restarts: 10,
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3010,
+      HOSTNAME: '0.0.0.0'
+    }
+  }]
+}
+ECOEOF
+fi
+
 # startOrRestart: starts the process if it doesn't exist yet, restarts if it does
 pm2 startOrRestart "$FRONTEND_SERVE/ecosystem.config.cjs" --only celeb-frontend
 pm2 save
