@@ -95,9 +95,16 @@ Route::prefix('v1')->group(function () {
 
             // Celebrity management
             Route::get('celebrities', [CelebrityManagementController::class, 'index']);
+            Route::post('celebrities', [CelebrityManagementController::class, 'store']);
             Route::get('celebrities/{celebrity}', [CelebrityManagementController::class, 'show']);
             Route::patch('celebrities/{celebrity}', [CelebrityManagementController::class, 'update']);
             Route::patch('celebrities/{celebrity}/user-status', [CelebrityManagementController::class, 'updateUserStatus']);
+            Route::delete('celebrities/{celebrity}', [CelebrityManagementController::class, 'destroy']);
+            // Celebrity services (payment items)
+            Route::get('celebrities/{celebrity}/services', [CelebrityManagementController::class, 'services']);
+            Route::post('celebrities/{celebrity}/services', [CelebrityManagementController::class, 'storeService']);
+            Route::patch('celebrities/{celebrity}/services/{service}', [CelebrityManagementController::class, 'updateService']);
+            Route::delete('celebrities/{celebrity}/services/{service}', [CelebrityManagementController::class, 'destroyService']);
 
             // Fan management
             Route::get('fans', [FanManagementController::class, 'index']);
