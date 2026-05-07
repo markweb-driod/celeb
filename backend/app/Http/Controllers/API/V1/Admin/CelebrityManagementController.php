@@ -74,7 +74,7 @@ class CelebrityManagementController extends Controller
             'profile_image_url'   => ['nullable', 'url', 'max:500'],
             'cover_image_url'     => ['nullable', 'url', 'max:500'],
             'social_links'        => ['nullable', 'array'],
-            'verification_status' => ['nullable', Rule::in(['pending', 'approved', 'rejected'])],
+            'verification_status' => ['nullable', Rule::in(['pending', 'verified', 'rejected'])],
             'is_featured'         => ['nullable', 'boolean'],
             'commission_rate'     => ['nullable', 'numeric', 'between:0,100'],
             'sort_order'          => ['nullable', 'integer', 'min:0'],
@@ -110,7 +110,7 @@ class CelebrityManagementController extends Controller
             'bio'                 => ['nullable', 'string', 'max:2000'],
             'category'            => ['nullable', 'string', 'max:100'],
             'commission_rate'     => ['nullable', 'numeric', 'between:0,100'],
-            'verification_status' => ['nullable', Rule::in(['pending', 'approved', 'rejected'])],
+            'verification_status' => ['nullable', Rule::in(['pending', 'verified', 'rejected'])],
             'is_featured'         => ['nullable', 'boolean'],
         ]);
 
