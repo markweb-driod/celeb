@@ -524,8 +524,6 @@ export default function AdminCelebritiesPage() {
   )
 }
 
-
-type Celebrity = {
   id: number
   stage_name: string
   category: string | null

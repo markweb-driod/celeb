@@ -178,7 +178,7 @@ function BookingPageContent() {
                     rows={4}
                     className="w-full rounded-xl border border-white/[0.08] bg-[#071e29] px-4 py-3 text-sm text-white placeholder-slate-600 outline-none transition focus:border-mint/40 focus:ring-2 focus:ring-mint/10 resize-none"
                   />
-                  <p className="mt-1 text-[11px] text-slate-600">{instructions.length} / 500 characters</p>
+                  <p className="mt-1 text-[11px] text-slate-600">{`${instructions.length} / 500 characters`}</p>
                 </div>
 
                 <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-[#071e29]/60 px-4 py-3">
