@@ -4,8 +4,15 @@ namespace App\Http\Controllers\API\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\CelebrityProfile;
+use App\Models\Conversation;
+use App\Models\Message;
+use App\Models\Order;
+use App\Models\Payout;
+use App\Models\Review;
 use App\Models\Service;
+use App\Models\Transaction;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -141,9 +148,30 @@ class CelebrityManagementController extends Controller
 
     public function destroy(CelebrityProfile $celebrity)
     {
-        $user = $celebrity->user;
-        $celebrity->delete();
-        $user?->delete();
+        DB::transaction(function () use ($celebrity) {
+            $user = $celebrity->user;
+
+            $orderIds = Order::where('celebrity_id', $celebrity->id)->pluck('id');
+
+            if ($orderIds->isNotEmpty()) {
+                Conversation::whereIn('order_id', $orderIds)->delete();
+                Transaction::whereIn('order_id', $orderIds)->delete();
+                Review::whereIn('order_id', $orderIds)->delete();
+                Order::whereIn('id', $orderIds)->delete();
+            }
+
+            Payout::where('celebrity_id', $celebrity->id)->delete();
+            Review::where('celebrity_id', $celebrity->id)->delete();
+            Service::where('celebrity_id', $celebrity->id)->delete();
+
+            if ($user) {
+                Message::where('sender_id', $user->id)->delete();
+                Transaction::where('user_id', $user->id)->delete();
+            }
+
+            $celebrity->delete();
+            $user?->delete();
+        });
 
         return response()->json(['message' => 'Celebrity deleted.']);
     }
