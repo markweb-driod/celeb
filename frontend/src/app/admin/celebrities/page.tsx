@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import DashShell from '../../components/DashShell'
 import { AUTH_TOKEN_KEY, api, getApiErrorMessage } from '../../lib/api'
