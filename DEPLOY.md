@@ -63,8 +63,8 @@ git init
 git remote add origin git@github.com:YOU/celebstarshub.git
 
 # Add GitHub's deploy key first (see section 6), then:
-git fetch origin main
-git reset --hard origin/main   # safe: .env is gitignored, won't be touched
+git fetch origin
+git reset --hard FETCH_HEAD   # safe: .env is gitignored, won't be touched
 ```
 
 ### 3b. Install dependencies & run first deploy
