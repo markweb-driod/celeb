@@ -145,14 +145,90 @@ function CreateCelebrityModal({ onClose, onCreated }: { onClose: () => void; onC
   )
 }
 
+/* ── Toggle switch ────────────────────────────────────────────────────────── */
+
+function Toggle({ on, onChange, title }: { on: boolean; onChange: () => void; title?: string }) {
+  return (
+    <button
+      onClick={onChange}
+      title={title}
+      className={`flex h-6 w-11 shrink-0 items-center rounded-full border transition ${
+        on ? 'border-amber/40 bg-amber/20' : 'border-white/10 bg-white/[0.05]'
+      }`}
+    >
+      <span className={`ml-0.5 h-4 w-4 rounded-full transition-transform ${
+        on ? 'translate-x-5 bg-amber' : 'translate-x-0 bg-slate-600'
+      }`} />
+    </button>
+  )
+}
+
+/* ── Inline commission editor ─────────────────────────────────────────────── */
+
+function CommissionCell({ value, onSave }: { value: string; onSave: (v: number) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus()
+  }, [editing])
+
+  const submit = () => {
+    const n = parseFloat(draft)
+    if (!isNaN(n) && n >= 0 && n <= 100) {
+      onSave(n)
+      setEditing(false)
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <input
+          ref={inputRef}
+          type="number"
+          min={0}
+          max={100}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') submit()
+            if (e.key === 'Escape') setEditing(false)
+          }}
+          className="w-16 rounded-lg border border-amber/40 bg-[#071e29] px-1.5 py-0.5 text-xs text-white focus:outline-none"
+        />
+        <span className="text-xs text-slate-500">%</span>
+        <button onClick={submit} className="rounded px-1 text-[10px] text-emerald-400 hover:text-emerald-300">✓</button>
+        <button onClick={() => setEditing(false)} className="rounded px-1 text-[10px] text-slate-500 hover:text-slate-400">✕</button>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={() => { setDraft(value); setEditing(true) }}
+      className="group flex items-center gap-1 rounded px-1 hover:bg-amber/10"
+      title="Click to edit commission"
+    >
+      <span className="text-slate-300">{value}%</span>
+      <span className="text-[10px] text-slate-600 opacity-0 transition group-hover:opacity-100">✏</span>
+    </button>
+  )
+}
+
 /* ── Page ────────────────────────────────────────────────────────────────── */
 
 export default function AdminCelebritiesPage() {
   const router = useRouter()
   const [user, setUser] = useState<AuthUser | null>(null)
+  const [tab, setTab] = useState<'all' | 'arrangement'>('all')
+
+  // All-tab state
   const [celebrities, setCelebrities] = useState<Celebrity[]>([])
   const [page, setPage] = useState(1)
   const [lastPage, setLastPage] = useState(1)
+  const [total, setTotal] = useState(0)
   const [q, setQ] = useState('')
   const [filterVerification, setFilterVerification] = useState('')
   const [loading, setLoading] = useState(true)
