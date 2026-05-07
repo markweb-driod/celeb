@@ -68,7 +68,7 @@ mkdir -p "$FRONTEND_SERVE"
 # --exclude='.env' and ecosystem.config.js so server-side config is never overwritten
 rsync -a --delete \
   --exclude='.env' \
-  --exclude='ecosystem.config.js' \
+  --exclude='ecosystem.config.cjs' \
   .next/standalone/ "$FRONTEND_SERVE/"
 
 if [[ ! -f "$FRONTEND_SERVE/.env" ]]; then
