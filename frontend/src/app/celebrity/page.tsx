@@ -14,6 +14,8 @@ type Service = {
   base_price: string
   currency: string
   delivery_days: number
+  images: string[] | null
+  short_video_url: string | null
   status: string
   total_sold: number
 }
@@ -171,6 +173,21 @@ function CelebrityProfileContent() {
               const icon = serviceTypeIcon[svc.service_type] ?? '✨'
               return (
                 <div key={svc.id} className="group flex flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#071e29]/70 transition hover:border-mint/25 hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+                  <div className="aspect-video w-full overflow-hidden border-b border-white/[0.05] bg-[#05131b]">
+                    {svc.short_video_url ? (
+                      <video
+                        src={svc.short_video_url}
+                        className="h-full w-full object-cover"
+                        controls
+                        muted
+                        preload="metadata"
+                      />
+                    ) : svc.images?.[0] ? (
+                      <img src={svc.images[0]} alt={svc.title} className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-4xl">{icon}</div>
+                    )}
+                  </div>
                   <div className="flex-1 p-5">
                     <div className="mb-3 flex items-start justify-between">
                       <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.04] text-2xl">{icon}</span>
