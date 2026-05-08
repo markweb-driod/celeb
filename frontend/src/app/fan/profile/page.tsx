@@ -31,7 +31,8 @@ export default function FanProfilePage() {
   const router = useRouter()
   const [user, setUser]             = useState<AuthUser | null>(null)
   const [displayName, setDisplayName] = useState('')
-  const [avatarUrl, setAvatarUrl]   = useState('')
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [existingAvatarUrl, setExistingAvatarUrl] = useState<string | null>(null)
   const [loading, setLoading]       = useState(true)
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState('')
@@ -47,7 +48,7 @@ export default function FanProfilePage() {
         setUser(me.data)
         const p = await api.get<ProfilePayload>('/fan/profile')
         setDisplayName(p.data.profile.display_name ?? '')
-        setAvatarUrl(p.data.profile.avatar_url ?? '')
+        setExistingAvatarUrl(p.data.profile.avatar_url ?? null)
       } catch (e) {
         setError(getApiErrorMessage(e))
       } finally {
@@ -63,9 +64,11 @@ export default function FanProfilePage() {
     setError('')
     setSuccess('')
     try {
-      await api.put('/fan/profile', {
-        display_name: displayName || null,
-        avatar_url:   avatarUrl   || null,
+      const formData = new FormData()
+      if (displayName) formData.append('display_name', displayName)
+      if (avatarFile) formData.append('avatar_photo', avatarFile)
+      await api.put('/fan/profile', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
       setSuccess('Profile saved successfully.')
     } catch (e) {
@@ -105,9 +108,15 @@ export default function FanProfilePage() {
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Avatar preview */}
             <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/[0.07] bg-[#071e29]/60 p-6 lg:col-span-1">
-              {avatarUrl ? (
+              {avatarFile ? (
                 <img
-                  src={avatarUrl}
+                  src={URL.createObjectURL(avatarFile)}
+                  alt="New avatar preview"
+                  className="h-24 w-24 rounded-full object-cover ring-2 ring-mint/30"
+                />
+              ) : existingAvatarUrl ? (
+                <img
+                  src={existingAvatarUrl}
                   alt="Avatar"
                   className="h-24 w-24 rounded-full object-cover ring-2 ring-mint/30"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
@@ -155,16 +164,15 @@ export default function FanProfilePage() {
 
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
-                  Avatar URL
+                  Profile photo
                 </label>
                 <input
-                  type="url"
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="https://example.com/avatar.jpg"
-                  className="w-full rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-mint/40 focus:ring-1 focus:ring-mint/20"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(e) => setAvatarFile(e.target.files?.[0] ?? null)}
+                  className="w-full rounded-xl border border-white/[0.07] bg-white/[0.03] px-3 py-2 text-sm text-white file:mr-3 file:rounded-lg file:border-0 file:bg-mint file:px-3 file:py-1 file:text-xs file:font-semibold file:text-[#07161e] outline-none"
                 />
-                <p className="mt-1 text-[11px] text-slate-600">Link to a publicly accessible image.</p>
+                <p className="mt-1 text-[11px] text-slate-600">Max 2MB. JPG, PNG or WEBP. Leave empty to keep current.</p>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-2">

@@ -79,8 +79,8 @@ class CelebrityManagementController extends Controller
             'stage_name'          => ['nullable', 'string', 'max:150'],
             'bio'                 => ['nullable', 'string', 'max:2000'],
             'category'            => ['nullable', 'string', 'max:100'],
-            'profile_image_url'   => ['nullable', 'url', 'max:500'],
-            'cover_image_url'     => ['nullable', 'url', 'max:500'],
+            'profile_photo'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'cover_photo'         => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'social_links'        => ['nullable', 'array'],
             'verification_status' => ['nullable', Rule::in(['pending', 'verified', 'rejected'])],
             'is_featured'         => ['nullable', 'boolean'],
@@ -88,7 +88,22 @@ class CelebrityManagementController extends Controller
             'sort_order'          => ['nullable', 'integer', 'min:0'],
         ]);
 
-        $celebrity->update(array_filter($data, fn ($v) => !is_null($v)));
+        $payload = array_filter(
+            array_diff_key($data, array_flip(['profile_photo', 'cover_photo'])),
+            fn ($v) => !is_null($v)
+        );
+
+        if ($request->hasFile('profile_photo')) {
+            $path = $request->file('profile_photo')->store('celebrity-profiles', 'public');
+            $payload['profile_image_url'] = Storage::disk('public')->url($path);
+        }
+
+        if ($request->hasFile('cover_photo')) {
+            $path = $request->file('cover_photo')->store('celebrity-covers', 'public');
+            $payload['cover_image_url'] = Storage::disk('public')->url($path);
+        }
+
+        $celebrity->update($payload);
 
         return response()->json([
             'message'   => 'Celebrity profile updated.',

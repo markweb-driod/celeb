@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\V1\Fan;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
@@ -20,19 +21,29 @@ class ProfileController extends Controller
     {
         $request->validate([
             'display_name' => 'nullable|string|max:255',
-            'avatar_url' => 'nullable|url',
+            'avatar_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $profile = $request->user()->fanProfile;
 
-        $profile->update($request->only([
-            'display_name',
-            'avatar_url'
-        ]));
+        $payload = [];
+
+        if ($request->has('display_name')) {
+            $payload['display_name'] = $request->input('display_name') ?: null;
+        }
+
+        if ($request->hasFile('avatar_photo')) {
+            $path = $request->file('avatar_photo')->store('fan-avatars', 'public');
+            $payload['avatar_url'] = Storage::disk('public')->url($path);
+        }
+
+        if (!empty($payload)) {
+            $profile->update($payload);
+        }
 
         return response()->json([
             'message' => 'Profile updated successfully',
-            'profile' => $profile
+            'profile' => $profile->fresh(),
         ]);
     }
 }
