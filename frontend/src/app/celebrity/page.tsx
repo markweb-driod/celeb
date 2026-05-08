@@ -112,7 +112,7 @@ function CelebrityProfileContent() {
   )
 
   const activeServices = profile.services?.filter(s => s.status === 'active') ?? []
-  const rating = profile.average_rating ? profile.average_rating.toFixed(1) : null
+  const rating = profile.average_rating ? Number(profile.average_rating).toFixed(1) : null
 
   return (
     <div className="min-h-screen bg-[#030d13]">
