@@ -2,52 +2,7 @@ import Link from 'next/link'
 import FaqAccordion from './components/FaqAccordion'
 import NavBar from './components/NavBar'
 import Logo from './components/Logo'
-
-/* ─── API types & helpers ──────────────────────────────────── */
-
-type ApiCelebrity = {
-  id: number
-  stage_name: string
-  category: string
-  min_price: string | null
-  average_rating: number | string | null
-  total_reviews: number
-}
-
-const CARD_GRADIENTS = [
-  'from-rose-500 to-pink-600',
-  'from-amber to-orange-500',
-  'from-violet-500 to-purple-600',
-  'from-emerald-500 to-teal-600',
-  'from-cyan-500 to-teal-600',
-  'from-blue-500 to-indigo-600',
-  'from-mint to-cyan-500',
-  'from-indigo-500 to-blue-600',
-]
-
-const getInitials = (name: string) =>
-  name.split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase()
-
-const fmtCelebPrice = (v: string | null) =>
-  v ? `from $${Math.round(Number(v))}` : null
-
-async function fetchCelebrities(): Promise<ApiCelebrity[]> {
-  try {
-    const base = (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8001/api/v1').replace(/\/$/, '')
-    const r1 = await fetch(`${base}/celebrities?per_page=8&is_featured=true`, { next: { revalidate: 300 } })
-    if (r1.ok) {
-      const d = await r1.json() as { celebrities?: { data?: ApiCelebrity[] } }
-      const list = d?.celebrities?.data ?? []
-      if (list.length >= 4) return list
-    }
-    const r2 = await fetch(`${base}/celebrities?per_page=8`, { next: { revalidate: 300 } })
-    if (r2.ok) {
-      const d = await r2.json() as { celebrities?: { data?: ApiCelebrity[] } }
-      return d?.celebrities?.data ?? []
-    }
-  } catch { /* API unavailable */ }
-  return []
-}
+import { HeroBookingCard, HeroFloatingCelebs, FeaturedCelebsGrid } from './components/LandingCelebs'
 
 /* ─── Data ─────────────────────────────────────────────────── */
 
@@ -192,8 +147,7 @@ const logos = ['🎬 Netflix Stars', '🏆 Athletes Inc', '🎵 Spotify Creators
 
 /* ─── Page ──────────────────────────────────────────────────── */
 
-export default async function HomePage() {
-  const celebrities = await fetchCelebrities()
+export default function HomePage() {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#08080a]">
       {/* ambient background layers */}
@@ -207,21 +161,7 @@ export default async function HomePage() {
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="hero-stage relative isolate overflow-hidden px-4 pb-20 pt-28 sm:px-6 lg:px-8 lg:pt-32">
         <div className="pointer-events-none absolute inset-0">
-          {celebrities.slice(0, 4).map((celeb, idx) => (
-            <div
-              key={celeb.id}
-              className="hero-celeb-layer"
-              style={{ animationDelay: `${idx * 4.5}s` }}
-            >
-              <div className="hero-celeb-content">
-                <span className={`hero-celeb-avatar bg-gradient-to-br ${CARD_GRADIENTS[idx % CARD_GRADIENTS.length]}`}>{getInitials(celeb.stage_name)}</span>
-                <div>
-                  <p className="hero-celeb-name">{celeb.stage_name}</p>
-                  <p className="hero-celeb-meta">{celeb.category}{fmtCelebPrice(celeb.min_price) ? ` · ${fmtCelebPrice(celeb.min_price)}` : ''}</p>
-                </div>
-              </div>
-            </div>
-          ))}
+          <HeroFloatingCelebs />
         </div>
         <div className="hero-stage-fade pointer-events-none absolute inset-0" />
         <div className="mx-auto w-full max-w-7xl">
@@ -265,16 +205,7 @@ export default async function HomePage() {
                   <span className="badge-mint px-2 py-0.5 text-[10px]">2 min avg checkout</span>
                 </div>
 
-                {celebrities.slice(0, 4).map((c, i) => (
-                  <div key={c.id} className="mb-2 flex items-center gap-3 rounded-xl border border-white/[0.05] bg-white/[0.02] px-3 py-2.5 transition hover:border-mint/25 hover:bg-mint/[0.04]">
-                    <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${CARD_GRADIENTS[i % CARD_GRADIENTS.length]} text-[10px] font-bold text-white`}>{getInitials(c.stage_name)}</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-white">{c.stage_name}</p>
-                      <p className="text-[11px] text-slate-500">{c.category}</p>
-                    </div>
-                    <p className="gradient-text-amber text-sm font-bold">{fmtCelebPrice(c.min_price) ?? '—'}</p>
-                  </div>
-                ))}
+                <HeroBookingCard />
 
                 <div className="mt-4 rounded-xl border border-mint/20 bg-mint/[0.06] px-4 py-2.5 text-center text-xs font-semibold text-mint-soft">
                   🎉 4 experiences booked in the last hour
@@ -342,39 +273,7 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {celebrities.length === 0 ? (
-              <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
-                <span className="mb-3 text-4xl">⭐</span>
-                <p className="text-sm text-slate-500">Verified celebrities will appear here once listed by the admin team.</p>
-                <Link href="/register" className="mt-4 text-sm text-mint-soft transition hover:text-white">Register to browse →</Link>
-              </div>
-            ) : celebrities.map((t, i) => (
-              <Link key={t.id} href={`/celebrity?id=${t.id}`} className="talent-card group p-5 block">
-                <div className="mb-4 flex items-center gap-3">
-                  <span className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${CARD_GRADIENTS[i % CARD_GRADIENTS.length]} text-sm font-bold text-white shadow-lg`}>
-                    {getInitials(t.stage_name)}
-                  </span>
-                  <div>
-                    <p className="font-display text-sm font-bold text-white leading-tight">{t.stage_name}</p>
-                    <p className="text-[11px] text-slate-500">{t.category}</p>
-                  </div>
-                </div>
-                {(Number(t.average_rating) > 0 || t.total_reviews > 0) && (
-                  <div className="mb-3 flex items-center justify-between text-[11px]">
-                    {Number(t.average_rating) > 0 && <span className="text-amber font-semibold">★ {Number(t.average_rating).toFixed(1)}</span>}
-                    {t.total_reviews > 0 && <span className="text-slate-600">{t.total_reviews} review{t.total_reviews !== 1 ? 's' : ''}</span>}
-                  </div>
-                )}
-                <div className="flex items-center justify-between">
-                  <p className="gradient-text-amber text-sm font-bold">{fmtCelebPrice(t.min_price) ?? 'View services'}</p>
-                  <span className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-white transition group-hover:border-mint/30 group-hover:bg-mint/[0.06] group-hover:text-mint-soft">
-                    Book →
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <FeaturedCelebsGrid />
         </div>
       </section>
 
