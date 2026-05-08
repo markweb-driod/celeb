@@ -58,6 +58,14 @@ function BookingPageContent() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    const token = window.localStorage.getItem(AUTH_TOKEN_KEY)
+    if (!token) {
+      router.replace('/login?redirect=' + encodeURIComponent('/book' + (serviceId ? '?id=' + serviceId : '')))
+    }
+  }, [router, serviceId])
+
   useEffect(() => {
     if (!serviceId) {
       setServiceError('Missing service id.')

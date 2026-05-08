@@ -63,6 +63,15 @@ function CheckoutContent() {
   const [success, setSuccess] = useState(false)
   const [cryptoConfirmed, setCryptoConfirmed] = useState(false)
 
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    const token = window.localStorage.getItem(AUTH_TOKEN_KEY)
+    if (!token) {
+      const redirect = orderId ? `/pay/${orderId}` : '/fan/checkout'
+      router.replace('/login?redirect=' + encodeURIComponent(redirect))
+    }
+  }, [router, orderId])
+
   // Canonical flow uses /pay/[orderId]. Keep this route as backward-compatible redirect.
   useEffect(() => {
     if (!orderId) return
