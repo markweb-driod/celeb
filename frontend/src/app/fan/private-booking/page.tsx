@@ -23,6 +23,13 @@ const navItems = [
 type BookingType = 'video_shoutout' | 'live_session' | 'meet_and_greet' | 'custom_request'
 type BudgetRange = 'under_50' | '50_200' | '200_500' | '500_1000' | 'over_1000'
 
+const SERVICE_TYPES_BY_BOOKING: Record<BookingType, string[]> = {
+  video_shoutout: ['video_shoutout', 'video_message', 'shoutout'],
+  live_session: ['live_session'],
+  meet_and_greet: ['meet_and_greet', 'meet_greet'],
+  custom_request: ['custom'],
+}
+
 const BOOKING_TYPES: { value: BookingType; label: string; icon: string; desc: string }[] = [
   { value: 'video_shoutout',  label: 'Video Shoutout',  icon: '🎬', desc: 'Personalised video message for you or someone special' },
   { value: 'live_session',    label: 'Live Session',    icon: '🎙️', desc: 'One-on-one video call or live performance' },
@@ -45,6 +52,19 @@ type CelebrityResult = {
   user?: { email?: string }
   profile_image_url?: string
   categories?: string[]
+}
+
+type ServiceItem = {
+  id: number
+  celebrity_id?: number
+  service_type?: string
+  celebrity?: { id?: number }
+}
+
+type ServiceListPayload = {
+  services?: {
+    data?: ServiceItem[]
+  } | ServiceItem[]
 }
 
 export default function PrivateBookingPage() {
@@ -115,6 +135,23 @@ export default function PrivateBookingPage() {
     setShowDropdown(false)
   }
 
+  const findServiceForRequest = async (celebrityId: number, type: BookingType): Promise<number | null> => {
+    const candidates = SERVICE_TYPES_BY_BOOKING[type]
+
+    for (const serviceType of candidates) {
+      const res = await api.get<ServiceListPayload>('/services', {
+        params: { service_type: serviceType, page: 1 },
+      })
+
+      const raw = res.data.services
+      const list = Array.isArray(raw) ? raw : (raw?.data ?? [])
+      const match = list.find((svc) => (svc.celebrity_id ?? svc.celebrity?.id) === celebrityId)
+      if (match?.id) return match.id
+    }
+
+    return null
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedCel) { setErrorMsg('Please select a creator.'); return }
@@ -122,13 +159,31 @@ export default function PrivateBookingPage() {
     setSubmitState('loading')
     setErrorMsg('')
     try {
-      await api.post('/orders', {
-        celebrity_id: selectedCel.id,
+      const serviceId = await findServiceForRequest(selectedCel.id, bookingType)
+      if (!serviceId) {
+        setErrorMsg('No matching service is currently available for this creator. Try another booking type or creator.')
+        setSubmitState('error')
+        return
+      }
+
+      const customizationData: Record<string, unknown> = {
         booking_type: bookingType,
-        requested_date: requestedDate || null,
         description,
         budget_range: budgetRange,
         special_instructions: specialInstructions || null,
+      }
+
+      const payload: Record<string, unknown> = {
+        service_id: serviceId,
+        customization_data: customizationData,
+      }
+
+      if (requestedDate) {
+        payload.booking_date = requestedDate
+      }
+
+      await api.post('/orders', {
+        ...payload,
       })
       setSubmitState('success')
     } catch (err: unknown) {
