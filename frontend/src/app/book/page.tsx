@@ -96,15 +96,19 @@ function BookingPageContent() {
     setSubmitError('')
 
     try {
-      const payload: Record<string, unknown> = {
-        service_id: Number(serviceId),
+      const customizationData: Record<string, unknown> = {
         recipient_name: recipientName.trim(),
         instructions: instructions.trim() || null,
         is_gift: isGift,
       }
 
       if (isGift && giftEmail.trim()) {
-        payload.gift_email = giftEmail.trim()
+        customizationData.gift_email = giftEmail.trim()
+      }
+
+      const payload: Record<string, unknown> = {
+        service_id: Number(serviceId),
+        customization_data: customizationData,
       }
 
       const res = await api.post<OrderPayload>('/orders', payload)
