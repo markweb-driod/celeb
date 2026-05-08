@@ -36,6 +36,16 @@ class OrderController extends Controller
     public function store(CreateOrderRequest $request)
     {
         $service = Service::findOrFail($request->service_id);
+
+        if ($service->requires_booking && (! $request->filled('booking_date') || ! $request->filled('booking_time'))) {
+            return response()->json([
+                'message' => 'Booking date and booking time are required for this service.',
+                'errors' => [
+                    'booking_date' => ['Booking date is required for this service.'],
+                    'booking_time' => ['Booking time is required for this service.'],
+                ],
+            ], 422);
+        }
         
         // Calculate fees
         $subtotal = $service->base_price; // Add logic for tiered/hourly if needed
