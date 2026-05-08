@@ -191,9 +191,12 @@ function BookingPageContent() {
                   onChange={(e) => setInstructions(e.target.value)}
                   placeholder="Add names, inside jokes, favourite topics, special wishes - the more detail the better."
                   rows={4}
+                  maxLength={INSTRUCTIONS_MAX}
                   className="w-full resize-none rounded-xl border border-white/[0.08] bg-[#071e29] px-4 py-3 text-sm text-white placeholder-slate-600 outline-none transition focus:border-mint/40 focus:ring-2 focus:ring-mint/10"
                 />
-                <p className="mt-1 text-[11px] text-slate-600">{String(instructions.length) + ' of 500 characters'}</p>
+                <p className={'mt-1 text-[11px] ' + (instructions.length >= INSTRUCTIONS_MAX ? 'text-amber' : 'text-slate-600')}>
+                  {String(instructions.length) + ' / ' + String(INSTRUCTIONS_MAX) + ' characters'}
+                </p>
               </div>
 
               <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-[#071e29]/60 px-4 py-3">
@@ -203,7 +206,6 @@ function BookingPageContent() {
                   className={'relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ' + (isGift ? 'bg-mint' : 'bg-white/10')}
                 >
                   <span
-                const INSTRUCTIONS_MAX = 500
                     className={
                       'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ' +
                       (isGift ? 'translate-x-4' : 'translate-x-0.5')
@@ -212,7 +214,7 @@ function BookingPageContent() {
                 </button>
                 <div>
                   <p className="text-sm font-semibold text-white">Send as a gift</p>
-                  <p className="text-[11px] text-slate-600">Deliver directly to someone else email</p>
+                  <p className="text-[11px] text-slate-600">Deliver directly to someone else&apos;s email</p>
                 </div>
               </div>
 
@@ -226,6 +228,7 @@ function BookingPageContent() {
                     value={giftEmail}
                     onChange={(e) => setGiftEmail(e.target.value)}
                     placeholder="friend@email.com"
+                    required={isGift}
                     className="w-full rounded-xl border border-white/[0.08] bg-[#071e29] px-4 py-3 text-sm text-white placeholder-slate-600 outline-none transition focus:border-mint/40 focus:ring-2 focus:ring-mint/10"
                   />
                 </div>
