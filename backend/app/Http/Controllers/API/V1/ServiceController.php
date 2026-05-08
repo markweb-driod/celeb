@@ -13,6 +13,10 @@ class ServiceController extends Controller
         $query = Service::with('celebrity')
             ->where('status', 'active');
 
+        if ($request->has('service_type')) {
+            $query->where('service_type', $request->service_type);
+        }
+
         if ($request->has('category_id')) {
             $query->where('category_id', $request->category_id);
         }
