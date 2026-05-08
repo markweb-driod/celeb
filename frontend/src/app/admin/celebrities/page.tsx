@@ -100,13 +100,32 @@ function CommissionCell({ value, onSave }: { value: string; onSave: (v: number) 
 
 function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [form, setForm] = useState({ email: '', password: '', stage_name: '', bio: '', category: '', commission_rate: '20', verification_status: 'pending', is_featured: false })
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
   const set = (k: string, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }))
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setErr('')
     try {
-      await api.post('/admin/celebrities', { ...form, commission_rate: parseFloat(form.commission_rate) })
+      if (!profilePhoto) {
+        setErr('Profile photo is required.')
+        return
+      }
+
+      const data = new FormData()
+      data.append('email', form.email)
+      data.append('password', form.password)
+      data.append('stage_name', form.stage_name)
+      data.append('bio', form.bio)
+      data.append('category', form.category)
+      data.append('commission_rate', String(parseFloat(form.commission_rate)))
+      data.append('verification_status', form.verification_status)
+      data.append('is_featured', form.is_featured ? '1' : '0')
+      data.append('profile_photo', profilePhoto)
+
+      await api.post('/admin/celebrities', data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
       onCreated(); onClose()
     } catch (ex) { setErr(getApiErrorMessage(ex)) } finally { setSaving(false) }
   }
@@ -134,6 +153,11 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             <div>
               <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Category</label>
               <input value={form.category} onChange={(e) => set('category', e.target.value)} placeholder="e.g. Music, Sports" className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40" />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Profile Photo *</label>
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setProfilePhoto(e.target.files?.[0] ?? null)} className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white file:mr-3 file:rounded-lg file:border-0 file:bg-amber file:px-3 file:py-1 file:text-xs file:font-semibold file:text-[#07161e] outline-none focus:border-amber/40" />
+              <p className="mt-1 text-[11px] text-slate-500">Required. Max 2MB. JPG, PNG, or WEBP only.</p>
             </div>
             <div>
               <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Commission %</label>
