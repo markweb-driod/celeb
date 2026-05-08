@@ -109,13 +109,13 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
     title: initial?.title ?? '',
     description: initial?.description ?? '',
     service_type: initial?.service_type ?? 'video_shoutout',
-    short_video_url: initial?.short_video_url ?? '',
     base_price: initial?.base_price ?? '',
     currency: initial?.currency ?? 'USD',
     max_delivery_days: initial?.max_delivery_days?.toString() ?? '3',
     status: initial?.status ?? 'active',
   })
   const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [videoFile, setVideoFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
 
@@ -141,7 +141,6 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
     data.append('title', form.title)
     data.append('description', form.description)
     data.append('service_type', form.service_type)
-    data.append('short_video_url', form.short_video_url.trim())
     data.append('base_price', form.base_price)
     data.append('currency', form.currency)
     data.append('max_delivery_days', form.max_delivery_days)
@@ -150,6 +149,8 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
     imageFiles.forEach((file) => {
       data.append('images_upload[]', file)
     })
+
+    if (videoFile) data.append('service_video', videoFile)
 
     try {
       await onSave(data)
@@ -228,13 +229,14 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
               )}
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Short Video URL (optional)</label>
+              <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Short Video Clip (optional)</label>
               <input
-                value={form.short_video_url}
-                onChange={e => set('short_video_url', e.target.value)}
-                placeholder="https://...mp4"
-                className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40"
+                type="file"
+                accept="video/mp4,video/mov,video/webm"
+                onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
+                className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white file:mr-3 file:rounded-lg file:border-0 file:bg-amber file:px-3 file:py-1 file:text-xs file:font-semibold file:text-[#07161e] outline-none focus:border-amber/40"
               />
+              <p className="mt-1 text-[11px] text-slate-500">MP4, MOV or WEBM. Max 50MB.{initial?.short_video_url && !videoFile ? ' Leave empty to keep existing video.' : ''}</p>
             </div>
           </div>
           {err && <p className="text-sm text-red-400">{err}</p>}
@@ -273,10 +275,13 @@ export default function AdminCelebrityDetailPage() {
   // Profile edit state
   const [profileForm, setProfileForm] = useState({
     stage_name: '', bio: '', category: '',
-    profile_image_url: '', cover_image_url: '',
     commission_rate: '', verification_status: 'pending',
     is_featured: false,
   })
+  const [existingProfileImageUrl, setExistingProfileImageUrl] = useState<string | null>(null)
+  const [existingCoverImageUrl, setExistingCoverImageUrl] = useState<string | null>(null)
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null)
+  const [coverPhotoFile, setCoverPhotoFile] = useState<File | null>(null)
 
   // Service modal
   const [serviceModal, setServiceModal] = useState<{ open: boolean; editing?: Service }>({ open: false })
@@ -296,12 +301,14 @@ export default function AdminCelebrityDetailPage() {
       stage_name: c.stage_name,
       bio: c.bio ?? '',
       category: c.category ?? '',
-      profile_image_url: c.profile_image_url ?? '',
-      cover_image_url: c.cover_image_url ?? '',
       commission_rate: c.commission_rate,
       verification_status: c.verification_status,
       is_featured: c.is_featured,
     })
+    setExistingProfileImageUrl(c.profile_image_url ?? null)
+    setExistingCoverImageUrl(c.cover_image_url ?? null)
+    setProfilePhotoFile(null)
+    setCoverPhotoFile(null)
   }
 
   useEffect(() => {
@@ -328,9 +335,17 @@ export default function AdminCelebrityDetailPage() {
     e.preventDefault()
     setSaving(true); setError('')
     try {
-      await api.patch(`/admin/celebrities/${id}`, {
-        ...profileForm,
-        commission_rate: parseFloat(profileForm.commission_rate),
+      const formData = new FormData()
+      formData.append('stage_name', profileForm.stage_name)
+      formData.append('bio', profileForm.bio)
+      formData.append('category', profileForm.category)
+      formData.append('commission_rate', profileForm.commission_rate)
+      formData.append('verification_status', profileForm.verification_status)
+      formData.append('is_featured', profileForm.is_featured ? '1' : '0')
+      if (profilePhotoFile) formData.append('profile_photo', profilePhotoFile)
+      if (coverPhotoFile) formData.append('cover_photo', coverPhotoFile)
+      await api.patch(`/admin/celebrities/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
       await loadDetail()
       flash('Profile saved.')
@@ -500,16 +515,30 @@ export default function AdminCelebrityDetailPage() {
                     className="w-full resize-none rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40" />
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Profile Image URL</label>
-                  <input value={profileForm.profile_image_url} onChange={e => setProfileForm(f => ({ ...f, profile_image_url: e.target.value }))}
-                    placeholder="https://…"
-                    className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40" />
+                  <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Profile Photo</label>
+                  {existingProfileImageUrl && !profilePhotoFile && (
+                    <img src={existingProfileImageUrl} alt="Current profile" className="mb-1.5 h-12 w-12 rounded-full object-cover ring-2 ring-amber/30" />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={(e) => setProfilePhotoFile(e.target.files?.[0] ?? null)}
+                    className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white file:mr-3 file:rounded-lg file:border-0 file:bg-amber file:px-3 file:py-1 file:text-xs file:font-semibold file:text-[#07161e] outline-none"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-600">Max 2MB. Leave empty to keep current.</p>
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Cover Image URL</label>
-                  <input value={profileForm.cover_image_url} onChange={e => setProfileForm(f => ({ ...f, cover_image_url: e.target.value }))}
-                    placeholder="https://…"
-                    className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40" />
+                  <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Cover Photo</label>
+                  {existingCoverImageUrl && !coverPhotoFile && (
+                    <img src={existingCoverImageUrl} alt="Current cover" className="mb-1.5 h-8 w-full rounded-lg object-cover ring-1 ring-amber/20" />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={(e) => setCoverPhotoFile(e.target.files?.[0] ?? null)}
+                    className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white file:mr-3 file:rounded-lg file:border-0 file:bg-amber file:px-3 file:py-1 file:text-xs file:font-semibold file:text-[#07161e] outline-none"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-600">Max 2MB. Leave empty to keep current.</p>
                 </div>
               </div>
               <button type="submit" disabled={saving}
