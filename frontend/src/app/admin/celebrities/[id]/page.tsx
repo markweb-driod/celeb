@@ -66,8 +66,10 @@ type DetailResponse = {
 type ServicesResponse = { services: Service[] }
 
 const SERVICE_TYPES = [
-  'video_shoutout', 'live_session', 'exclusive_content',
-  'meet_and_greet', 'birthday_surprise', 'custom',
+  'fan_card', 'video_message', 'video_shoutout', 'live_session',
+  'exclusive_content', 'meet_greet', 'meet_and_greet', 'private_event',
+  'birthday_performance', 'birthday_surprise', 'shoutout',
+  'merchandise', 'membership', 'custom',
 ]
 
 const verificationClass: Record<string, string> = {
