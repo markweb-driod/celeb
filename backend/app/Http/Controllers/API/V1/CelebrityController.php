@@ -14,6 +14,7 @@ class CelebrityController extends Controller
         $search = trim((string) $request->query('search', ''));
         $category = trim((string) $request->query('category', ''));
         $sort = (string) $request->query('sort', 'popular');
+        $featuredOnly = filter_var($request->query('is_featured', false), FILTER_VALIDATE_BOOLEAN);
 
         $query = CelebrityProfile::query()
             ->with('user:id,email')
@@ -22,9 +23,14 @@ class CelebrityController extends Controller
                     $q->where('status', 'active');
                 },
             ], 'base_price')
+            ->where('verification_status', 'verified')
             ->whereHas('services', static function ($q) {
                 $q->where('status', 'active');
             });
+
+        if ($featuredOnly) {
+            $query->where('is_featured', true);
+        }
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
