@@ -21,6 +21,7 @@ type OrderPayload = { orders: { data: Order[]; total: number } }
 
 const statusMeta: Record<string, { label: string; cls: string; icon: string }> = {
   pending:     { label: 'Pending',     cls: 'border-amber/30 bg-amber/10 text-amber',                       icon: '⏳' },
+  awaiting_confirmation: { label: 'Awaiting Confirmation', cls: 'border-orange-400/30 bg-orange-500/10 text-orange-300', icon: '🧾' },
   confirmed:   { label: 'Confirmed',   cls: 'border-blue-400/30 bg-blue-500/10 text-blue-300',              icon: '✅' },
   in_progress: { label: 'In Progress', cls: 'border-violet-400/30 bg-violet-500/10 text-violet-300',        icon: '🔄' },
   completed:   { label: 'Completed',   cls: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300',     icon: '🎉' },
@@ -76,7 +77,7 @@ export default function FanDashboardPage() {
   const displayName = user?.fan_profile?.display_name ?? user?.fanProfile?.display_name ?? user?.email ?? 'Fan'
   const initials = displayName.slice(0, 2).toUpperCase()
   const spent = orders.filter(o => o.status === 'completed').reduce((s, o) => s + Number(o.total_amount), 0)
-  const active = orders.filter(o => ['pending','confirmed','in_progress'].includes(o.status)).length
+  const active = orders.filter(o => ['pending', 'awaiting_confirmation', 'confirmed', 'in_progress'].includes(o.status)).length
 
   return (
     <DashShell navItems={navItems} userName={displayName} roleLabel="Fan" accentColor="mint">
