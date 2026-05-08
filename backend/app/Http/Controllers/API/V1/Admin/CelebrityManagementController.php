@@ -26,7 +26,7 @@ class CelebrityManagementController extends Controller
             'category'            => ['nullable', 'string', 'max:100'],
             'verification_status' => ['nullable', Rule::in(['pending', 'verified', 'rejected'])],
             'is_featured'         => ['nullable', 'boolean'],
-            'per_page'            => ['nullable', 'integer', 'between:5,100'],
+            'per_page'            => ['nullable', 'integer', 'between:5,200'],
         ]);
 
         $celebrities = CelebrityProfile::query()
