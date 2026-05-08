@@ -34,6 +34,12 @@ const serviceTypes = [
   { value: 'merchandise', label: 'Merchandise' },
   { value: 'exclusive_content', label: 'Exclusive Content' },
   { value: 'membership', label: 'Membership' },
+  { value: 'shoutout', label: 'Shoutout' },
+  { value: 'video_shoutout', label: 'Video Shoutout' },
+  { value: 'live_session', label: 'Live Session' },
+  { value: 'meet_and_greet', label: 'Meet and Greet' },
+  { value: 'birthday_surprise', label: 'Birthday Surprise' },
+  { value: 'custom', label: 'Custom' },
 ]
 
 export default function NewCelebrityServicePage() {
@@ -52,6 +58,9 @@ export default function NewCelebrityServicePage() {
   const [isDigital, setIsDigital] = useState(true)
   const [requiresBooking, setRequiresBooking] = useState(false)
   const [durationMinutes, setDurationMinutes] = useState('')
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [imageError, setImageError] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -90,15 +99,20 @@ export default function NewCelebrityServicePage() {
     setError('')
 
     try {
-      await api.post('/celebrity/services', {
-        category_id: Number(categoryId),
-        service_type: serviceType,
-        title,
-        description,
-        base_price: Number(basePrice),
-        is_digital: isDigital,
-        requires_booking: requiresBooking,
-        duration_minutes: durationMinutes ? Number(durationMinutes) : null,
+      const formData = new FormData()
+      formData.append('category_id', String(Number(categoryId)))
+      formData.append('service_type', serviceType)
+      formData.append('title', title)
+      formData.append('description', description)
+      formData.append('base_price', String(Number(basePrice)))
+      formData.append('is_digital', isDigital ? '1' : '0')
+      formData.append('requires_booking', requiresBooking ? '1' : '0')
+      if (durationMinutes) formData.append('duration_minutes', String(Number(durationMinutes)))
+      imageFiles.forEach((f) => formData.append('images_upload[]', f))
+      if (videoFile) formData.append('service_video', videoFile)
+
+      await api.post('/celebrity/services', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
 
       router.push('/celebrity/services')
@@ -227,6 +241,40 @@ export default function NewCelebrityServicePage() {
                 <input type="checkbox" checked={requiresBooking} onChange={(e) => setRequiresBooking(e.target.checked)} className="accent-amber" />
                 Requires booking schedule
               </label>
+            </div>
+
+            {/* Optional media */}
+            <div className="space-y-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Optional media</p>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Service images (max 2)</label>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  multiple
+                  onChange={(e) => {
+                    setImageError('')
+                    const files = Array.from(e.target.files ?? [])
+                    if (files.length > 2) { setImageError('Maximum 2 images allowed.'); return }
+                    const oversized = files.find((f) => f.size > 2 * 1024 * 1024)
+                    if (oversized) { setImageError('Each image must be under 2MB.'); return }
+                    setImageFiles(files)
+                  }}
+                  className="w-full rounded-xl border border-white/10 bg-[#050f17] px-3 py-2 text-sm text-white file:mr-3 file:rounded-lg file:border-0 file:bg-amber file:px-3 file:py-1 file:text-xs file:font-semibold file:text-[#07161e] outline-none"
+                />
+                {imageError && <p className="mt-1 text-[11px] text-red-400">{imageError}</p>}
+                <p className="mt-1 text-[11px] text-slate-600">JPG, PNG or WEBP. Max 2MB each. Up to 2 images.</p>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Short video clip (optional)</label>
+                <input
+                  type="file"
+                  accept="video/mp4,video/mov,video/webm"
+                  onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
+                  className="w-full rounded-xl border border-white/10 bg-[#050f17] px-3 py-2 text-sm text-white file:mr-3 file:rounded-lg file:border-0 file:bg-amber file:px-3 file:py-1 file:text-xs file:font-semibold file:text-[#07161e] outline-none"
+                />
+                <p className="mt-1 text-[11px] text-slate-600">MP4, MOV or WEBM. Max 50MB.</p>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2">

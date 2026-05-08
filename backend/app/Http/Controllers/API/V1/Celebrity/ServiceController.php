@@ -7,6 +7,7 @@ use App\Http\Requests\Service\CreateServiceRequest;
 use App\Http\Requests\Service\UpdateServiceRequest;
 use App\Models\Service;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ServiceController extends Controller
@@ -22,7 +23,25 @@ class ServiceController extends Controller
         $data = $request->validated();
         $data['slug'] = Str::slug($data['title']) . '-' . Str::random(6);
         $data['celebrity_id'] = $request->user()->celebrityProfile->id;
-        $data['status'] = 'active'; // Default to active for simplicity in MVP
+        $data['status'] = 'active';
+
+        // Handle image uploads (max 2)
+        $imageUrls = [];
+        if ($request->hasFile('images_upload')) {
+            foreach ($request->file('images_upload') as $img) {
+                $path = $img->store('service-images', 'public');
+                $imageUrls[] = Storage::disk('public')->url($path);
+            }
+        }
+        $data['images'] = $imageUrls ?: null;
+        unset($data['images_upload']);
+
+        // Handle video upload
+        if ($request->hasFile('service_video')) {
+            $path = $request->file('service_video')->store('service-videos', 'public');
+            $data['short_video_url'] = Storage::disk('public')->url($path);
+        }
+        unset($data['service_video']);
 
         $service = Service::create($data);
 
@@ -47,7 +66,27 @@ class ServiceController extends Controller
             abort(403);
         }
 
-        $service->update($request->validated());
+        $data = $request->validated();
+
+        // Handle image uploads (max 2)
+        if ($request->hasFile('images_upload')) {
+            $imageUrls = [];
+            foreach ($request->file('images_upload') as $img) {
+                $path = $img->store('service-images', 'public');
+                $imageUrls[] = Storage::disk('public')->url($path);
+            }
+            $data['images'] = $imageUrls;
+        }
+        unset($data['images_upload']);
+
+        // Handle video upload
+        if ($request->hasFile('service_video')) {
+            $path = $request->file('service_video')->store('service-videos', 'public');
+            $data['short_video_url'] = Storage::disk('public')->url($path);
+        }
+        unset($data['service_video']);
+
+        $service->update($data);
 
         return response()->json([
             'message' => 'Service updated successfully',
