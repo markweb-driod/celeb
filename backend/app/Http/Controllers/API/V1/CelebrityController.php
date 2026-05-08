@@ -104,6 +104,8 @@ class CelebrityController extends Controller
                         'base_price' => $service->base_price,
                         'currency' => $service->currency,
                         'delivery_days' => $service->max_delivery_days,
+                        'images' => $service->images,
+                        'short_video_url' => $service->short_video_url,
                         'status' => $service->status,
                         'total_sold' => $service->total_sold,
                     ];

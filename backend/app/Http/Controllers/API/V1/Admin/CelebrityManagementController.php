@@ -215,6 +215,9 @@ class CelebrityManagementController extends Controller
             'currency'          => ['nullable', 'string', 'max:3'],
             'max_delivery_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'status'            => ['nullable', Rule::in(['active', 'inactive', 'draft'])],
+            'images'            => ['nullable', 'array', 'max:8'],
+            'images.*'          => ['required', 'url', 'max:1000'],
+            'short_video_url'   => ['nullable', 'url', 'max:1000'],
         ]);
 
         $service = $celebrity->services()->create([
@@ -239,6 +242,9 @@ class CelebrityManagementController extends Controller
             'currency'          => ['nullable', 'string', 'max:3'],
             'max_delivery_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'status'            => ['nullable', Rule::in(['active', 'inactive', 'draft'])],
+            'images'            => ['nullable', 'array', 'max:8'],
+            'images.*'          => ['required', 'url', 'max:1000'],
+            'short_video_url'   => ['nullable', 'url', 'max:1000'],
         ]);
 
         $service->update(array_filter($data, fn ($v) => !is_null($v)));

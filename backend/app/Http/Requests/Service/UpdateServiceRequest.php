@@ -21,7 +21,9 @@ class UpdateServiceRequest extends FormRequest
             'description' => 'sometimes|string',
             'base_price' => 'sometimes|numeric|min:0',
             'status' => 'sometimes|in:draft,active,paused',
-            'images' => 'nullable|array',
+            'images' => 'nullable|array|max:8',
+            'images.*' => 'required|url|max:1000',
+            'short_video_url' => 'nullable|url|max:1000',
             'duration_minutes' => 'nullable|integer|min:0',
         ];
     }

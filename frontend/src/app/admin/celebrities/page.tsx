@@ -403,7 +403,7 @@ export default function AdminCelebritiesPage() {
                     {celebrities.length === 0 ? (
                       <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-500">No celebrities found.</td></tr>
                     ) : celebrities.map((c) => (
-                      <tr key={c.id} className="hover:bg-white/[0.02]">
+                      <tr key={c.id} className="cursor-pointer hover:bg-white/[0.02]" onClick={() => router.push(`/admin/celebrities/${c.id}`)}>
                         <td className="px-4 py-3">
                           <div className="font-semibold text-white">{c.stage_name}</div>
                           <div className="text-xs text-slate-500">{c.user.email}</div>
@@ -430,29 +430,33 @@ export default function AdminCelebritiesPage() {
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1">
                             {c.verification_status !== 'verified' && (
-                              <button onClick={() => void patchCeleb(c, { verification_status: 'verified' })} disabled={actionId === c.id}
+                              <button onClick={(e) => { e.stopPropagation(); void patchCeleb(c, { verification_status: 'verified' }) }} disabled={actionId === c.id}
                                 className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-300 hover:bg-emerald-500/20 disabled:opacity-50">
                                 Verify
                               </button>
                             )}
                             {c.verification_status !== 'rejected' && (
-                              <button onClick={() => void patchCeleb(c, { verification_status: 'rejected' })} disabled={actionId === c.id}
+                              <button onClick={(e) => { e.stopPropagation(); void patchCeleb(c, { verification_status: 'rejected' }) }} disabled={actionId === c.id}
                                 className="rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1 text-[11px] text-red-300 hover:bg-red-500/20 disabled:opacity-50">
                                 Reject
                               </button>
                             )}
                             {c.user.status === 'active' ? (
-                              <button onClick={() => void patchUserStatus(c, 'suspended')} disabled={actionId === c.id}
+                              <button onClick={(e) => { e.stopPropagation(); void patchUserStatus(c, 'suspended') }} disabled={actionId === c.id}
                                 className="rounded-lg border border-amber/30 bg-amber/10 px-2 py-1 text-[11px] text-amber hover:bg-amber/20 disabled:opacity-50">
                                 Suspend
                               </button>
                             ) : (
-                              <button onClick={() => void patchUserStatus(c, 'active')} disabled={actionId === c.id}
+                              <button onClick={(e) => { e.stopPropagation(); void patchUserStatus(c, 'active') }} disabled={actionId === c.id}
                                 className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-300 hover:bg-emerald-500/20 disabled:opacity-50">
                                 Activate
                               </button>
                             )}
-                            <button onClick={() => void deleteCeleb(c)} disabled={actionId === c.id}
+                            <button onClick={(e) => { e.stopPropagation(); router.push(`/admin/celebrities/${c.id}`) }}
+                              className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-300 hover:bg-cyan-500/20">
+                              View
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); void deleteCeleb(c) }} disabled={actionId === c.id}
                               className="rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1 text-[11px] text-red-300 hover:bg-red-500/20 disabled:opacity-50">
                               Delete
                             </button>

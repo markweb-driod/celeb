@@ -39,6 +39,8 @@ type Service = {
   title: string
   description: string | null
   service_type: string
+  images: string[] | null
+  short_video_url: string | null
   base_price: string
   currency: string
   max_delivery_days: number | null
@@ -107,6 +109,8 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
     title: initial?.title ?? '',
     description: initial?.description ?? '',
     service_type: initial?.service_type ?? 'video_shoutout',
+    images_csv: initial?.images?.join(', ') ?? '',
+    short_video_url: initial?.short_video_url ?? '',
     base_price: initial?.base_price ?? '',
     currency: initial?.currency ?? 'USD',
     max_delivery_days: initial?.max_delivery_days?.toString() ?? '3',
@@ -120,9 +124,15 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true); setErr('')
+    const parsedImages = form.images_csv
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean)
     try {
       await onSave({
         ...form,
+        images: parsedImages.length ? parsedImages : null,
+        short_video_url: form.short_video_url.trim() || null,
         base_price: parseFloat(form.base_price),
         max_delivery_days: parseInt(form.max_delivery_days) || null,
       })
@@ -185,6 +195,24 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
               <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Description</label>
               <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3}
                 className="w-full resize-none rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40" />
+            </div>
+            <div className="col-span-2">
+              <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Image URLs (comma-separated)</label>
+              <input
+                value={form.images_csv}
+                onChange={e => set('images_csv', e.target.value)}
+                placeholder="https://...jpg, https://...png"
+                className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Short Video URL (optional)</label>
+              <input
+                value={form.short_video_url}
+                onChange={e => set('short_video_url', e.target.value)}
+                placeholder="https://...mp4"
+                className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40"
+              />
             </div>
           </div>
           {err && <p className="text-sm text-red-400">{err}</p>}
@@ -484,6 +512,7 @@ export default function AdminCelebrityDetailPage() {
                     <thead>
                       <tr className="border-b border-white/[0.06] text-left">
                         <th className="pb-2 text-[11px] uppercase tracking-widest text-slate-500">Title</th>
+                        <th className="pb-2 text-[11px] uppercase tracking-widest text-slate-500">Media</th>
                         <th className="pb-2 text-[11px] uppercase tracking-widest text-slate-500">Type</th>
                         <th className="pb-2 text-[11px] uppercase tracking-widest text-slate-500">Price</th>
                         <th className="pb-2 text-[11px] uppercase tracking-widest text-slate-500">Days</th>
@@ -498,6 +527,13 @@ export default function AdminCelebrityDetailPage() {
                           <td className="py-2 pr-3">
                             <p className="font-semibold text-white">{svc.title}</p>
                             <p className="text-[11px] text-slate-500 line-clamp-1">{svc.description ?? '—'}</p>
+                          </td>
+                          <td className="py-2 pr-3 text-xs text-slate-400">
+                            <div className="flex items-center gap-2">
+                              <span>{svc.images?.length ?? 0} img</span>
+                              <span>·</span>
+                              <span>{svc.short_video_url ? 'video' : 'no video'}</span>
+                            </div>
                           </td>
                           <td className="py-2 pr-3 text-xs capitalize text-slate-400">{svc.service_type.replace(/_/g, ' ')}</td>
                           <td className="py-2 pr-3 font-semibold text-amber">{svc.currency} {Number(svc.base_price).toFixed(2)}</td>
