@@ -44,6 +44,7 @@ function BookingPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const serviceId = (searchParams.get('id') || '').trim()
+  const INSTRUCTIONS_MAX = 500
 
   const [service, setService] = useState<Service | null>(null)
   const [loadingService, setLoadingService] = useState(true)
@@ -89,6 +90,11 @@ function BookingPageContent() {
 
     if (!recipientName.trim()) {
       setSubmitError('Please enter a recipient name.')
+      return
+    }
+
+    if (isGift && !giftEmail.trim()) {
+      setSubmitError('Please enter a recipient email for gift delivery.')
       return
     }
 

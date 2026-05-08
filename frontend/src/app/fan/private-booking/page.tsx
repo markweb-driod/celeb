@@ -6,6 +6,9 @@ import DashShell from '../../components/DashShell'
 import { AUTH_TOKEN_KEY, api } from '../../lib/api'
 import { AuthUser } from '../../lib/types'
 
+const DESCRIPTION_MAX = 1000
+const SPECIAL_INSTRUCTIONS_MAX = 1000
+
 const navItems = [
   { href: '/fan/dashboard',     label: 'Overview',       icon: '🏠' },
   { href: '/fan/explore',       label: 'Explore',        icon: '🔍' },
@@ -67,6 +70,12 @@ type ServiceListPayload = {
   } | ServiceItem[]
 }
 
+type CreateOrderPayload = {
+  order: {
+    id: number
+  }
+}
+
 export default function PrivateBookingPage() {
   const router = useRouter()
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -87,7 +96,7 @@ export default function PrivateBookingPage() {
   const [description, setDescription] = useState('')
   const [budgetRange, setBudgetRange] = useState<BudgetRange>('50_200')
   const [specialInstructions, setSpecialInstructions] = useState('')
-  const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [submitState, setSubmitState] = useState<'idle' | 'loading' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
@@ -156,6 +165,10 @@ export default function PrivateBookingPage() {
     e.preventDefault()
     if (!selectedCel) { setErrorMsg('Please select a creator.'); return }
     if (!description.trim()) { setErrorMsg('Please describe your request.'); return }
+    if ((bookingType === 'live_session' || bookingType === 'meet_and_greet') && !requestedDate) {
+      setErrorMsg('Please choose a preferred date for this booking type.')
+      return
+    }
     setSubmitState('loading')
     setErrorMsg('')
     try {
@@ -182,13 +195,13 @@ export default function PrivateBookingPage() {
         payload.booking_date = requestedDate
       }
 
-      await api.post('/orders', {
+      const res = await api.post<CreateOrderPayload>('/orders', {
         ...payload,
       })
-      setSubmitState('success')
+      router.push('/pay/' + res.data.order.id)
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } }
-      setErrorMsg(e?.response?.data?.message ?? 'Failed to submit booking request. Please try again.')
+      setErrorMsg(e?.response?.data?.message ?? 'Failed to create booking order. Please review your details and try again.')
       setSubmitState('error')
     }
   }
@@ -201,33 +214,12 @@ export default function PrivateBookingPage() {
     </DashShell>
   )
 
-  if (submitState === 'success') return (
-    <DashShell navItems={navItems} userName={displayName} roleLabel="Fan" accentColor="mint">
-      <div className="flex flex-col items-center py-20 text-center">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-mint/10 text-4xl">🎉</div>
-        <h2 className="font-display text-2xl font-extrabold text-white">Request Sent!</h2>
-        <p className="mt-2 text-sm text-slate-400 max-w-sm">
-          Your private booking request has been sent to <span className="font-semibold text-white">{selectedCel?.stage_name ?? selectedCel?.display_name ?? 'the creator'}</span>.
-          You&apos;ll be notified once they respond.
-        </p>
-        <div className="mt-8 flex gap-4">
-          <button onClick={() => { setSubmitState('idle'); setSelectedCel(null); setCelSearch(''); setDescription(''); setSpecialInstructions(''); setRequestedDate('') }} className="btn-primary rounded-xl px-6 py-3 text-sm font-bold">
-            New Request
-          </button>
-          <button onClick={() => router.push('/fan/orders')} className="rounded-xl border border-white/10 px-6 py-3 text-sm text-slate-400 hover:text-white transition">
-            My Bookings
-          </button>
-        </div>
-      </div>
-    </DashShell>
-  )
-
   return (
     <DashShell navItems={navItems} userName={displayName} roleLabel="Fan" accentColor="mint">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="font-display text-2xl font-extrabold text-white sm:text-3xl">Private Booking</h1>
-        <p className="mt-1 text-sm text-slate-400">Request a personalised experience directly from your favourite creator</p>
+        <h1 className="font-display text-2xl font-extrabold text-white sm:text-3xl">Private Booking Checkout</h1>
+        <p className="mt-1 text-sm text-slate-400">Select a creator, customize your request, then continue to secure payment.</p>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
@@ -312,7 +304,7 @@ export default function PrivateBookingPage() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">Preferred Date <span className="normal-case text-slate-600">(optional)</span></label>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">Preferred Date <span className="normal-case text-slate-600">(required for live sessions and meet-and-greets)</span></label>
                 <input
                   type="date"
                   value={requestedDate}
@@ -328,10 +320,11 @@ export default function PrivateBookingPage() {
                   rows={4}
                   value={description}
                   onChange={e => setDescription(e.target.value)}
+                  maxLength={DESCRIPTION_MAX}
                   placeholder="Tell the creator exactly what you'd like — the more detail, the better your experience will be…"
                   className="w-full resize-y rounded-xl border border-white/10 bg-[#050f17] py-3 px-4 text-sm text-white placeholder-slate-600 outline-none focus:border-mint/50 focus:ring-2 focus:ring-mint/10"
                 />
-                <p className="mt-1 text-[10px] text-slate-600">{description.length} / 1000 characters</p>
+                <p className="mt-1 text-[10px] text-slate-600">{description.length} / {DESCRIPTION_MAX} characters</p>
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">Special Instructions <span className="normal-case text-slate-600">(optional)</span></label>
@@ -339,6 +332,7 @@ export default function PrivateBookingPage() {
                   rows={2}
                   value={specialInstructions}
                   onChange={e => setSpecialInstructions(e.target.value)}
+                  maxLength={SPECIAL_INSTRUCTIONS_MAX}
                   placeholder="Any technical requirements, props, dress code, etc."
                   className="w-full resize-y rounded-xl border border-white/10 bg-[#050f17] py-3 px-4 text-sm text-white placeholder-slate-600 outline-none focus:border-mint/50 focus:ring-2 focus:ring-mint/10"
                 />
@@ -380,9 +374,9 @@ export default function PrivateBookingPage() {
             {submitState === 'loading' ? (
               <span className="flex items-center justify-center gap-2">
                 <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                Sending Request…
+                Creating Order…
               </span>
-            ) : 'Send Booking Request'}
+            ) : 'Create Order and Continue to Payment'}
           </button>
         </form>
 
@@ -392,11 +386,11 @@ export default function PrivateBookingPage() {
             <h3 className="mb-3 font-display text-sm font-bold text-white">How It Works</h3>
             <ol className="space-y-3 text-xs text-slate-400">
               {[
-                ['📤', 'Submit your request', 'Describe what you want and set your budget'],
-                ['⏳', 'Creator reviews',     'The creator will review and respond within 48h'],
-                ['💬', 'Discuss & confirm',   'Finalise details via your private inbox'],
-                ['💳', 'Pay securely',        'Payment is only charged when you confirm'],
-                ['🎉', 'Enjoy!',              'Receive your personalised experience'],
+                ['🧾', 'Create your order',   'Select a creator and share your detailed request'],
+                ['💳', 'Pay securely',        'Complete checkout to lock in your booking request'],
+                ['📬', 'Creator receives it', 'The creator gets your request with your instructions'],
+                ['✅', 'Status updates',      'Track progress from pending to completed in My Bookings'],
+                ['🎉', 'Enjoy!',              'Receive your personalised experience when fulfilled'],
               ].map(([icon, title, desc], i) => (
                 <li key={i} className="flex gap-3">
                   <span className="text-base">{icon}</span>
