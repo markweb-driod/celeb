@@ -264,6 +264,18 @@ export default function AdminCelebritiesPage() {
     finally { setActionId(null) }
   }
 
+  const deleteCeleb = async (celeb: Celebrity) => {
+    if (!window.confirm(`Delete ${celeb.stage_name}? This permanently removes profile and account.`)) return
+    setActionId(celeb.id); setError('')
+    try {
+      await api.delete(`/admin/celebrities/${celeb.id}`)
+      await loadPage(q, filterVerification, page)
+      await loadArrangement()
+      flash('Celebrity deleted.')
+    } catch (e) { setError(getApiErrorMessage(e)) }
+    finally { setActionId(null) }
+  }
+
   const toggleFeatured = async (celeb: Celebrity) => {
     const newVal = !celeb.is_featured
     setArranged((prev) => prev.map((c) => (c.id === celeb.id ? { ...c, is_featured: newVal } : c)))
@@ -440,6 +452,10 @@ export default function AdminCelebritiesPage() {
                                 Activate
                               </button>
                             )}
+                            <button onClick={() => void deleteCeleb(c)} disabled={actionId === c.id}
+                              className="rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1 text-[11px] text-red-300 hover:bg-red-500/20 disabled:opacity-50">
+                              Delete
+                            </button>
                           </div>
                         </td>
                       </tr>

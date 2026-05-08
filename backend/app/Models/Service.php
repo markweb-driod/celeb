@@ -20,6 +20,7 @@ class Service extends Model
         'slug',
         'description',
         'images',
+        'short_video_url',
         'base_price',
         'currency',
         'pricing_type',
@@ -34,6 +35,7 @@ class Service extends Model
 
     protected $casts = [
         'images' => 'array',
+        'short_video_url' => 'string',
         'base_price' => 'decimal:2',
         'is_digital' => 'boolean',
         'requires_booking' => 'boolean',
