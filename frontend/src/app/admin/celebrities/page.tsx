@@ -179,6 +179,7 @@ export default function AdminCelebritiesPage() {
   const [page, setPage] = useState(1)
   const [lastPage, setLastPage] = useState(1)
   const [total, setTotal] = useState(0)
+  const [perPage, setPerPage] = useState(20)
   const [q, setQ] = useState('')
   const [filterVerification, setFilterVerification] = useState('')
   const [loading, setLoading] = useState(true)
@@ -193,12 +194,13 @@ export default function AdminCelebritiesPage() {
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [overIdx, setOverIdx] = useState<number | null>(null)
 
-  const loadPage = useCallback(async (search: string, verification: string, p: number) => {
-    const params: Record<string, string | number> = { per_page: 20, page: p }
+  const loadPage = useCallback(async (search: string, verification: string, p: number, pageSize: number) => {
+    const params: Record<string, string | number> = { per_page: pageSize, page: p }
     if (search) params.q = search
     if (verification) params.verification_status = verification
     const res = await api.get<PagedResponse>('/admin/celebrities', { params })
     setCelebrities(res.data.celebrities.data)
+    setPage(res.data.celebrities.current_page)
     setLastPage(res.data.celebrities.last_page)
     setTotal(res.data.celebrities.total ?? res.data.celebrities.data.length)
   }, [])
@@ -223,7 +225,7 @@ export default function AdminCelebritiesPage() {
         const me = await api.get<AuthUser>('/auth/me')
         if (me.data.user_type !== 'admin') { router.replace('/dashboard'); return }
         setUser(me.data)
-        await Promise.all([loadPage('', '', 1), loadArrangement()])
+        await Promise.all([loadPage('', '', 1, 20), loadArrangement()])
       } catch (e) { setError(getApiErrorMessage(e)) }
       finally { setLoading(false) }
     }
@@ -239,7 +241,7 @@ export default function AdminCelebritiesPage() {
     setActionId(celeb.id); setError('')
     try {
       await api.patch(`/admin/celebrities/${celeb.id}`, patch)
-      await loadPage(q, filterVerification, page)
+      await loadPage(q, filterVerification, page, perPage)
       setArranged((prev) => prev.map((c) => {
         if (c.id !== celeb.id) return c
         return {
@@ -258,7 +260,7 @@ export default function AdminCelebritiesPage() {
     setActionId(celeb.id); setError('')
     try {
       await api.patch(`/admin/celebrities/${celeb.id}/user-status`, { status })
-      await loadPage(q, filterVerification, page)
+      await loadPage(q, filterVerification, page, perPage)
       flash('User status updated.')
     } catch (e) { setError(getApiErrorMessage(e)) }
     finally { setActionId(null) }
@@ -269,7 +271,8 @@ export default function AdminCelebritiesPage() {
     setActionId(celeb.id); setError('')
     try {
       await api.delete(`/admin/celebrities/${celeb.id}`)
-      await loadPage(q, filterVerification, page)
+      const nextPage = celebrities.length === 1 && page > 1 ? page - 1 : page
+      await loadPage(q, filterVerification, nextPage, perPage)
       await loadArrangement()
       flash('Celebrity deleted.')
     } catch (e) { setError(getApiErrorMessage(e)) }
@@ -321,9 +324,25 @@ export default function AdminCelebritiesPage() {
       {showCreate && (
         <CreateModal
           onClose={() => setShowCreate(false)}
-          onCreated={() => { void loadPage(q, filterVerification, page); void loadArrangement() }}
+          onCreated={() => { void loadPage(q, filterVerification, page, perPage); void loadArrangement() }}
         />
       )}
+
+      {(() => {
+        const totalPages = lastPage
+        const pages = Array.from({ length: totalPages }, (_, index) => index + 1)
+          .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+        const displayPages: Array<number | string> = []
+        for (const p of pages) {
+          const last = displayPages[displayPages.length - 1]
+          if (typeof last === 'number' && p - last > 1) displayPages.push('...')
+          displayPages.push(p)
+        }
+        const startItem = total === 0 ? 0 : (page - 1) * perPage + 1
+        const endItem = Math.min(page * perPage, total)
+
+        return null
+      })()}
 
       {loading ? (
         <div className="flex h-40 items-center justify-center text-slate-400">Loading...</div>
@@ -373,18 +392,32 @@ export default function AdminCelebritiesPage() {
             <>
               <div className="flex flex-wrap gap-2">
                 <input type="text" value={q} onChange={(e) => setQ(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { setPage(1); void loadPage(q, filterVerification, 1) } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { setPage(1); void loadPage(q, filterVerification, 1, perPage) } }}
                   placeholder="Search name or email..."
                   className="w-56 rounded-xl border border-white/10 bg-[#071e29] px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber/40" />
                 <select value={filterVerification}
-                  onChange={(e) => { setFilterVerification(e.target.value); setPage(1); void loadPage(q, e.target.value, 1) }}
+                  onChange={(e) => { setFilterVerification(e.target.value); setPage(1); void loadPage(q, e.target.value, 1, perPage) }}
                   className="rounded-xl border border-white/10 bg-[#071e29] px-3 py-2 text-sm text-white">
                   <option value="">All verification</option>
                   <option value="pending">Pending</option>
                   <option value="verified">Verified</option>
                   <option value="rejected">Rejected</option>
                 </select>
-                <button onClick={() => { setPage(1); void loadPage(q, filterVerification, 1) }}
+                <select
+                  value={perPage}
+                  onChange={(e) => {
+                    const nextSize = Number(e.target.value)
+                    setPerPage(nextSize)
+                    setPage(1)
+                    void loadPage(q, filterVerification, 1, nextSize)
+                  }}
+                  className="rounded-xl border border-white/10 bg-[#071e29] px-3 py-2 text-sm text-white"
+                >
+                  {[10, 20, 50, 100].map((size) => (
+                    <option key={size} value={size}>{size} / page</option>
+                  ))}
+                </select>
+                <button onClick={() => { setPage(1); void loadPage(q, filterVerification, 1, perPage) }}
                   className="rounded-xl bg-amber px-4 py-2 text-sm font-semibold text-[#07161e]">
                   Search
                 </button>
@@ -468,19 +501,45 @@ export default function AdminCelebritiesPage() {
                 </table>
               </div>
 
-              {lastPage > 1 && (
-                <div className="flex items-center gap-2">
-                  <button onClick={() => { const p = page - 1; setPage(p); void loadPage(q, filterVerification, p) }} disabled={page === 1}
+              <div className="flex flex-col gap-3 rounded-2xl border border-white/[0.07] bg-[#071e29]/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-500">
+                  {total === 0 ? 'No results' : `Showing ${(page - 1) * perPage + 1}-${Math.min(page * perPage, total)} of ${total} celebrities`}
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button onClick={() => { const p = page - 1; setPage(p); void loadPage(q, filterVerification, p, perPage) }} disabled={page === 1}
                     className="rounded-xl border border-white/10 px-3 py-1.5 text-sm text-slate-400 disabled:opacity-40 hover:border-amber/30 hover:text-white">
                     Prev
                   </button>
-                  <span className="text-sm text-slate-500">Page {page} of {lastPage}</span>
-                  <button onClick={() => { const p = page + 1; setPage(p); void loadPage(q, filterVerification, p) }} disabled={page === lastPage}
+                  {(() => {
+                    const pages = Array.from({ length: lastPage }, (_, index) => index + 1)
+                      .filter((p) => p === 1 || p === lastPage || Math.abs(p - page) <= 1)
+                    const displayPages: Array<number | string> = []
+                    for (const p of pages) {
+                      const last = displayPages[displayPages.length - 1]
+                      if (typeof last === 'number' && p - last > 1) displayPages.push('...')
+                      displayPages.push(p)
+                    }
+
+                    return displayPages.map((item, index) => (
+                      typeof item === 'number' ? (
+                        <button
+                          key={item}
+                          onClick={() => { setPage(item); void loadPage(q, filterVerification, item, perPage) }}
+                          className={`min-w-9 rounded-xl px-3 py-1.5 text-sm transition ${item === page ? 'bg-amber font-semibold text-[#07161e]' : 'border border-white/10 text-slate-400 hover:border-amber/30 hover:text-white'}`}
+                        >
+                          {item}
+                        </button>
+                      ) : (
+                        <span key={`ellipsis-${index}`} className="px-1 text-sm text-slate-600">...</span>
+                      )
+                    ))
+                  })()}
+                  <button onClick={() => { const p = page + 1; setPage(p); void loadPage(q, filterVerification, p, perPage) }} disabled={page === lastPage || lastPage === 0}
                     className="rounded-xl border border-white/10 px-3 py-1.5 text-sm text-slate-400 disabled:opacity-40 hover:border-amber/30 hover:text-white">
                     Next
                   </button>
                 </div>
-              )}
+              </div>
             </>
           )}
 
