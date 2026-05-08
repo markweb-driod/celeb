@@ -36,13 +36,30 @@ type CelebProfile = {
 type ProfilePayload = { celebrity: CelebProfile }
 
 const serviceTypeIcon: Record<string, string> = {
+  fan_card: '🃏',
+  video_message: '🎬',
   video_shoutout: '🎬',
   live_session: '🎤',
   exclusive_content: '🔒',
   meet_and_greet: '🤝',
+  meet_greet: '🤝',
   birthday_surprise: '🎂',
+  birthday_performance: '🎂',
+  private_event: '🎪',
+  merchandise: '🛍️',
+  membership: '⭐',
+  shoutout: '📣',
   custom: '✨',
 }
+
+const cardGradients = [
+  'from-amber/40 via-orange-500/20 to-rose-600/30',
+  'from-violet-500/40 via-purple-600/20 to-indigo-600/30',
+  'from-cyan-500/40 via-teal-500/20 to-emerald-600/30',
+  'from-rose-500/40 via-pink-600/20 to-fuchsia-600/30',
+  'from-blue-500/40 via-indigo-500/20 to-violet-600/30',
+  'from-emerald-500/40 via-teal-500/20 to-cyan-600/30',
+]
 
 const fmt = (amount: string, currency: string) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD', minimumFractionDigits: 0 }).format(Number(amount))
@@ -169,8 +186,49 @@ function CelebrityProfileContent() {
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {activeServices.map((svc) => {
+            {activeServices.map((svc, idx) => {
               const icon = serviceTypeIcon[svc.service_type] ?? '✨'
+              const isFanCard = svc.service_type === 'fan_card'
+              const grad = cardGradients[idx % cardGradients.length]
+
+              if (isFanCard) {
+                return (
+                  <div key={svc.id} className="group relative flex flex-col overflow-hidden rounded-3xl border border-white/[0.09] bg-[#071e29]/80 shadow-lg transition hover:-translate-y-0.5 hover:border-amber/25 hover:shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
+                    <div className={`relative aspect-[3/2] w-full overflow-hidden bg-gradient-to-br ${grad}`}>
+                      {svc.images?.[0] ? (
+                        <img src={svc.images[0]} alt={svc.title} className="h-full w-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="flex h-full w-full flex-col items-center justify-center gap-2">
+                          <span className="text-5xl opacity-60">🃏</span>
+                          <span className="font-display text-xs font-bold uppercase tracking-widest text-white/40">Fan Card</span>
+                        </div>
+                      )}
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                      <div className="absolute left-3 top-3 rounded-full border border-white/20 bg-black/40 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white backdrop-blur-sm">
+                        Fan Card
+                      </div>
+                      {svc.total_sold > 0 && (
+                        <div className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/40 px-2.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+                          {svc.total_sold} owned
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-1 flex-col p-4">
+                      <h3 className="font-display text-sm font-bold text-white">{svc.title}</h3>
+                      {svc.description && (
+                        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">{svc.description}</p>
+                      )}
+                      <div className="mt-auto flex items-center justify-between pt-4">
+                        <p className="gradient-text-amber font-display text-lg font-bold">{fmt(svc.base_price, svc.currency)}</p>
+                        <Link href={`/book?id=${svc.id}`} className="rounded-xl bg-amber/15 px-4 py-1.5 text-xs font-bold text-amber transition group-hover:bg-amber group-hover:text-[#07161e]">
+                          Collect →
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+
               return (
                 <div key={svc.id} className="group flex flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#071e29]/70 transition hover:border-mint/25 hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
                   <div className="aspect-video w-full overflow-hidden border-b border-white/[0.05] bg-[#05131b]">

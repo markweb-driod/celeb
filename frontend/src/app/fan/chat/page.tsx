@@ -34,6 +34,7 @@ type MessageResponse = {
 const navItems = [
   { href: '/fan/dashboard', label: 'Overview', icon: '🏠' },
   { href: '/fan/explore', label: 'Explore', icon: '🔍' },
+  { href: '/fan/cards',   label: 'Fan Cards', icon: '🃏' },
   { href: '/fan/orders', label: 'My Bookings', icon: '📦' },
   { href: '/fan/subscriptions', label: 'Subscriptions', icon: '⭐' },
   { href: '/fan/chat', label: 'Chat', icon: '💬' },
