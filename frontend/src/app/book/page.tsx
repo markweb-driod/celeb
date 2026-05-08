@@ -197,6 +197,7 @@ function BookingPageContent() {
                   className={'relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ' + (isGift ? 'bg-mint' : 'bg-white/10')}
                 >
                   <span
+                const INSTRUCTIONS_MAX = 500
                     className={
                       'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ' +
                       (isGift ? 'translate-x-4' : 'translate-x-0.5')
