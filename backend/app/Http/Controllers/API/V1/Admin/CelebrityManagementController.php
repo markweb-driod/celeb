@@ -231,14 +231,14 @@ class CelebrityManagementController extends Controller
         $data = $request->validate([
             'title'             => ['required', 'string', 'max:200'],
             'description'       => ['nullable', 'string', 'max:2000'],
-            'service_type'      => ['required', Rule::in(['video_shoutout', 'live_session', 'exclusive_content', 'meet_and_greet', 'birthday_surprise', 'custom'])],
+            'service_type'      => ['required', Rule::in(['video_shoutout', 'live_session', 'exclusive_content', 'meet_and_greet', 'birthday_surprise', 'custom', 'fan_card', 'video_message', 'private_event', 'birthday_performance', 'meet_greet', 'merchandise', 'membership', 'shoutout', 'custom'])],
             'base_price'        => ['required', 'numeric', 'min:0'],
             'currency'          => ['nullable', 'string', 'max:3'],
             'max_delivery_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'status'            => ['nullable', Rule::in(['active', 'inactive', 'draft'])],
             'images_upload'     => ['nullable', 'array', 'max:2'],
             'images_upload.*'   => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'short_video_url'   => ['nullable', 'url', 'max:1000'],
+            'service_video'     => ['nullable', 'file', 'mimes:mp4,mov,webm', 'max:51200'],
         ]);
 
         $uploadedImageUrls = [];
@@ -250,8 +250,13 @@ class CelebrityManagementController extends Controller
         }
 
         $payload = $data;
-        unset($payload['images_upload']);
+        unset($payload['images_upload'], $payload['service_video']);
         $payload['images'] = $uploadedImageUrls ?: null;
+
+        if ($request->hasFile('service_video')) {
+            $vpath = $request->file('service_video')->store('service-videos', 'public');
+            $payload['short_video_url'] = Storage::disk('public')->url($vpath);
+        }
 
         $service = $celebrity->services()->create([
             ...$payload,
@@ -270,18 +275,18 @@ class CelebrityManagementController extends Controller
         $data = $request->validate([
             'title'             => ['nullable', 'string', 'max:200'],
             'description'       => ['nullable', 'string', 'max:2000'],
-            'service_type'      => ['nullable', Rule::in(['video_shoutout', 'live_session', 'exclusive_content', 'meet_and_greet', 'birthday_surprise', 'custom'])],
+            'service_type'      => ['nullable', Rule::in(['video_shoutout', 'live_session', 'exclusive_content', 'meet_and_greet', 'birthday_surprise', 'custom', 'fan_card', 'video_message', 'private_event', 'birthday_performance', 'meet_greet', 'merchandise', 'membership', 'shoutout'])],
             'base_price'        => ['nullable', 'numeric', 'min:0'],
             'currency'          => ['nullable', 'string', 'max:3'],
             'max_delivery_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'status'            => ['nullable', Rule::in(['active', 'inactive', 'draft'])],
             'images_upload'     => ['nullable', 'array', 'max:2'],
             'images_upload.*'   => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'short_video_url'   => ['nullable', 'url', 'max:1000'],
+            'service_video'     => ['nullable', 'file', 'mimes:mp4,mov,webm', 'max:51200'],
         ]);
 
         $payload = array_filter($data, fn ($v) => !is_null($v));
-        unset($payload['images_upload']);
+        unset($payload['images_upload'], $payload['service_video']);
 
         if ($request->hasFile('images_upload')) {
             $uploadedImageUrls = [];
@@ -290,6 +295,11 @@ class CelebrityManagementController extends Controller
                 $uploadedImageUrls[] = Storage::disk('public')->url($path);
             }
             $payload['images'] = $uploadedImageUrls ?: null;
+        }
+
+        if ($request->hasFile('service_video')) {
+            $vpath = $request->file('service_video')->store('service-videos', 'public');
+            $payload['short_video_url'] = Storage::disk('public')->url($vpath);
         }
 
         $service->update($payload);
