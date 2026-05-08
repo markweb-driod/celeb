@@ -17,13 +17,18 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        $validated = $request->validate([
+            'status' => ['nullable', 'string', 'in:pending,awaiting_confirmation,confirmed,in_progress,completed,cancelled,refunded'],
+            'per_page' => ['nullable', 'integer', 'between:5,100'],
+        ]);
         
         $orders = Order::query()
             ->when($user->user_type === 'fan', fn($q) => $q->where('fan_id', $user->fanProfile->id))
             ->when($user->user_type === 'celebrity', fn($q) => $q->where('celebrity_id', $user->celebrityProfile->id))
+            ->when($validated['status'] ?? null, fn($q, $status) => $q->where('status', $status))
             ->with(['service', 'celebrity', 'fan'])
             ->latest()
-            ->paginate(15);
+            ->paginate((int) ($validated['per_page'] ?? 15));
             
         return response()->json(['orders' => $orders]);
     }
@@ -119,7 +124,7 @@ class OrderController extends Controller
             $allowed = ['cancelled'];
         } else {
             // Admins can set any status
-            $allowed = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'refunded'];
+            $allowed = ['pending', 'awaiting_confirmation', 'confirmed', 'in_progress', 'completed', 'cancelled', 'refunded'];
         }
 
         $data = $request->validate([

@@ -74,7 +74,7 @@ class PaymentController extends Controller
 
         $validated = $request->validate([
             'payment_method' => ['required', 'string', 'max:50'],
-            'proof_url'      => ['nullable', 'string', 'max:1000'],
+            'proof_url'      => ['nullable', 'string', 'max:1000', 'regex:/^\/storage\/payment-proofs\/[A-Za-z0-9_\-\.\/]+$/'],
             'gift_card_code' => ['nullable', 'string', 'max:500'],
             'notes'          => ['nullable', 'string', 'max:1000'],
         ]);

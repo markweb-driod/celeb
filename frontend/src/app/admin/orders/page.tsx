@@ -34,10 +34,11 @@ type OrdersResponse = {
 
 type DetailResponse = { order: AdminOrder }
 
-const STATUS_OPTIONS = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'refunded']
+const STATUS_OPTIONS = ['pending', 'awaiting_confirmation', 'confirmed', 'in_progress', 'completed', 'cancelled', 'refunded']
 
 const statusClass: Record<string, string> = {
   pending:     'border-amber/30 bg-amber/10 text-amber',
+  awaiting_confirmation: 'border-orange-400/30 bg-orange-500/10 text-orange-300',
   confirmed:   'border-blue-400/30 bg-blue-500/10 text-blue-300',
   in_progress: 'border-violet-400/30 bg-violet-500/10 text-violet-300',
   completed:   'border-emerald-400/30 bg-emerald-500/10 text-emerald-300',

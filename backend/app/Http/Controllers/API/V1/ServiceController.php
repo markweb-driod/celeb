@@ -10,6 +10,10 @@ class ServiceController extends Controller
 {
     public function index(Request $request)
     {
+        $validated = $request->validate([
+            'per_page' => ['nullable', 'integer', 'between:1,100'],
+        ]);
+
         $query = Service::with('celebrity')
             ->where('status', 'active');
 
@@ -29,7 +33,7 @@ class ServiceController extends Controller
         }
 
         return response()->json([
-            'services' => $query->paginate(20)
+            'services' => $query->paginate((int) ($validated['per_page'] ?? 20))
         ]);
     }
 
