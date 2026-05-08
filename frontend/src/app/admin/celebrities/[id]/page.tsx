@@ -145,15 +145,15 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl border border-white/[0.09] bg-[#071e29] shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 px-4 py-4 backdrop-blur-sm sm:items-center sm:py-8">
+      <div className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/[0.09] bg-[#071e29] shadow-2xl sm:max-h-[85vh]">
         <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
           <p className="font-display font-bold text-white">{initial ? 'Edit Service' : 'Add Service'}</p>
           <button onClick={onClose} className="text-slate-500 hover:text-white text-xl">✕</button>
         </div>
         <form onSubmit={submit} className="space-y-4 p-5">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
               <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Title *</label>
               <input required value={form.title} onChange={e => set('title', e.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40" />
@@ -186,17 +186,17 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
               <input value={form.currency} onChange={e => set('currency', e.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40" />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Delivery Days</label>
               <input type="number" min="1" value={form.max_delivery_days} onChange={e => set('max_delivery_days', e.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40" />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Description</label>
               <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3}
                 className="w-full resize-none rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40" />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Image URLs (comma-separated)</label>
               <input
                 value={form.images_csv}
@@ -205,7 +205,7 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
                 className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40"
               />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Short Video URL (optional)</label>
               <input
                 value={form.short_video_url}
