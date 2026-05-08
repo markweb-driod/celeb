@@ -21,11 +21,11 @@ const navItems = [
   { href: '/fan/profile',         label: 'Profile',         icon: '👤' },
 ]
 
-const VAULT_CATEGORIES = ['All', 'Videos', 'Audio', 'Photos', 'Documents'] as const
+const VAULT_CATEGORIES = ['All', 'Fan Cards', 'Videos', 'Audio', 'Photos', 'Documents'] as const
 type VaultCategory = typeof VAULT_CATEGORIES[number]
 
 const CATEGORY_ICONS: Record<VaultCategory, string> = {
-  All: '🔒', Videos: '🎬', Audio: '🎵', Photos: '🖼️', Documents: '📄',
+  All: '🔒', 'Fan Cards': '🃏', Videos: '🎬', Audio: '🎧', Photos: '🖼️', Documents: '📄',
 }
 
 export default function FanVaultPage() {
@@ -88,26 +88,44 @@ export default function FanVaultPage() {
           ))}
         </div>
 
-        {/* Empty state */}
-        <div className="flex flex-col items-center gap-6 rounded-2xl border border-dashed border-white/10 py-20 text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-mint/20 to-teal-600/10 text-4xl ring-1 ring-mint/20">
-            🔒
+        {/* Fan Cards tab */}
+        {activeTab === 'Fan Cards' && (
+          <div className="space-y-4">
+            <div className="flex flex-col items-center gap-5 rounded-2xl border border-dashed border-white/10 py-16 text-center">
+              <span className="text-5xl">🃏</span>
+              <div>
+                <p className="font-display text-base font-bold text-white">No fan cards collected yet</p>
+                <p className="mt-1 text-sm text-slate-500">When you purchase a fan card it will appear here.</p>
+              </div>
+              <Link href="/fan/cards" className="rounded-xl bg-mint/15 px-6 py-2.5 text-sm font-bold text-mint-soft transition hover:bg-mint hover:text-[#07161e]">
+                Browse Fan Cards →
+              </Link>
+            </div>
           </div>
-          <div>
-            <p className="font-display text-lg font-bold text-white">Your vault is empty</p>
-            <p className="mt-2 max-w-sm text-sm text-slate-400">
-              Subscribe to a creator to unlock exclusive videos, audio drops, photos, and more — all stored here just for you.
-            </p>
+        )}
+
+        {/* Empty state for other tabs */}
+        {activeTab !== 'Fan Cards' && (
+          <div className="flex flex-col items-center gap-6 rounded-2xl border border-dashed border-white/10 py-20 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-mint/20 to-teal-600/10 text-4xl ring-1 ring-mint/20">
+              🔒
+            </div>
+            <div>
+              <p className="font-display text-lg font-bold text-white">Your vault is empty</p>
+              <p className="mt-2 max-w-sm text-sm text-slate-400">
+                Subscribe to a creator to unlock exclusive videos, audio drops, photos, and more — all stored here just for you.
+              </p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link href="/fan/subscriptions" className="btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold">
+                Browse subscription plans
+              </Link>
+              <Link href="/fan/explore" className="rounded-xl border border-white/10 px-6 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-white/20 hover:text-white">
+                Explore creators
+              </Link>
+            </div>
           </div>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link href="/fan/subscriptions" className="btn-primary rounded-xl px-6 py-2.5 text-sm font-semibold">
-              Browse subscription plans
-            </Link>
-            <Link href="/fan/explore" className="rounded-xl border border-white/10 px-6 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-white/20 hover:text-white">
-              Explore creators
-            </Link>
-          </div>
-        </div>
+        )}
 
         {/* How it works */}
         <div className="rounded-2xl border border-white/[0.07] bg-[#071e29]/60 p-5 sm:p-6">
