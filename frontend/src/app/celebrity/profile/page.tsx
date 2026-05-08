@@ -50,8 +50,10 @@ export default function CelebrityProfilePage() {
   const [success, setSuccess] = useState('')
 
   const [bio, setBio] = useState('')
-  const [profileImageUrl, setProfileImageUrl] = useState('')
-  const [coverImageUrl, setCoverImageUrl] = useState('')
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null)
+  const [existingProfileImageUrl, setExistingProfileImageUrl] = useState<string | null>(null)
+  const [existingCoverImageUrl, setExistingCoverImageUrl] = useState<string | null>(null)
   const [instagramUrl, setInstagramUrl] = useState('')
   const [youtubeUrl, setYoutubeUrl] = useState('')
   const [tiktokUrl, setTiktokUrl] = useState('')
@@ -76,8 +78,8 @@ export default function CelebrityProfilePage() {
         const profileRes = await api.get<ProfilePayload>('/celebrity/profile')
         const profile = profileRes.data.profile
         setBio(profile.bio ?? '')
-        setProfileImageUrl(profile.profile_image_url ?? '')
-        setCoverImageUrl(profile.cover_image_url ?? '')
+        setExistingProfileImageUrl(profile.profile_image_url ?? null)
+        setExistingCoverImageUrl(profile.cover_image_url ?? null)
 
         const links = parseSocialLinks(profile.social_links)
         setInstagramUrl(links.find((link) => link.includes('instagram.com')) ?? '')
@@ -103,11 +105,14 @@ export default function CelebrityProfilePage() {
     try {
       const socialLinks = [instagramUrl, youtubeUrl, tiktokUrl, xUrl].map((link) => link.trim()).filter(Boolean)
 
-      await api.put('/celebrity/profile', {
-        bio: bio.trim() || null,
-        profile_image_url: profileImageUrl.trim() || null,
-        cover_image_url: coverImageUrl.trim() || null,
-        social_links: socialLinks,
+      const formData = new FormData()
+      formData.append('bio', bio.trim() || '')
+      formData.append('social_links', JSON.stringify(socialLinks))
+      if (profileImageFile) formData.append('profile_photo', profileImageFile)
+      if (coverImageFile) formData.append('cover_photo', coverImageFile)
+
+      await api.put('/celebrity/profile', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
 
       setSuccess('Profile updated successfully.')
@@ -162,24 +167,30 @@ export default function CelebrityProfilePage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Profile image URL</label>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Profile photo</label>
+                {existingProfileImageUrl && !profileImageFile && (
+                  <img src={existingProfileImageUrl} alt="Current profile" className="mb-2 h-16 w-16 rounded-full object-cover ring-2 ring-amber/30" />
+                )}
                 <input
-                  value={profileImageUrl}
-                  onChange={(e) => setProfileImageUrl(e.target.value)}
-                  type="url"
-                  placeholder="https://..."
-                  className="w-full rounded-xl border border-white/10 bg-[#050f17] px-3 py-3 text-sm text-white outline-none focus:border-amber/60"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(e) => setProfileImageFile(e.target.files?.[0] ?? null)}
+                  className="w-full rounded-xl border border-white/10 bg-[#050f17] px-3 py-2 text-sm text-white file:mr-3 file:rounded-lg file:border-0 file:bg-amber file:px-3 file:py-1 file:text-xs file:font-semibold file:text-[#07161e] outline-none"
                 />
+                <p className="mt-1 text-[11px] text-slate-600">Max 2MB. JPG, PNG or WEBP. Leave empty to keep current.</p>
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Cover image URL</label>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Cover photo</label>
+                {existingCoverImageUrl && !coverImageFile && (
+                  <img src={existingCoverImageUrl} alt="Current cover" className="mb-2 h-10 w-full rounded-lg object-cover ring-1 ring-amber/20" />
+                )}
                 <input
-                  value={coverImageUrl}
-                  onChange={(e) => setCoverImageUrl(e.target.value)}
-                  type="url"
-                  placeholder="https://..."
-                  className="w-full rounded-xl border border-white/10 bg-[#050f17] px-3 py-3 text-sm text-white outline-none focus:border-amber/60"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(e) => setCoverImageFile(e.target.files?.[0] ?? null)}
+                  className="w-full rounded-xl border border-white/10 bg-[#050f17] px-3 py-2 text-sm text-white file:mr-3 file:rounded-lg file:border-0 file:bg-amber file:px-3 file:py-1 file:text-xs file:font-semibold file:text-[#07161e] outline-none"
                 />
+                <p className="mt-1 text-[11px] text-slate-600">Max 2MB. JPG, PNG or WEBP. Leave empty to keep current.</p>
               </div>
             </div>
 
