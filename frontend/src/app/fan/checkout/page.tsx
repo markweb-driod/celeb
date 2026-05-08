@@ -63,6 +63,12 @@ function CheckoutContent() {
   const [success, setSuccess] = useState(false)
   const [cryptoConfirmed, setCryptoConfirmed] = useState(false)
 
+  // Canonical flow uses /pay/[orderId]. Keep this route as backward-compatible redirect.
+  useEffect(() => {
+    if (!orderId) return
+    router.replace(`/pay/${orderId}`)
+  }, [orderId, router])
+
   const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2 }).format(n)
   const finalAmount = Math.max(0, amount - giftDiscount)
 
@@ -139,6 +145,17 @@ function CheckoutContent() {
     await new Promise(r => setTimeout(r, 1500))
     setProcessing(false)
     setCryptoConfirmed(true)
+  }
+
+  if (orderId) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#030d13] px-4 text-center">
+        <div>
+          <p className="font-display text-xl font-bold text-white">Redirecting to secure payment...</p>
+          <p className="mt-2 text-sm text-slate-400">Please wait while we open your order payment page.</p>
+        </div>
+      </div>
+    )
   }
 
   if (success || cryptoConfirmed) {
