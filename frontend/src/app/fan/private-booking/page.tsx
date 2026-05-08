@@ -67,6 +67,7 @@ type ServiceItem = {
 type ServiceListPayload = {
   services?: {
     data?: ServiceItem[]
+    last_page?: number
   } | ServiceItem[]
 }
 
@@ -148,14 +149,25 @@ export default function PrivateBookingPage() {
     const candidates = SERVICE_TYPES_BY_BOOKING[type]
 
     for (const serviceType of candidates) {
-      const res = await api.get<ServiceListPayload>('/services', {
-        params: { service_type: serviceType, page: 1 },
-      })
+      let page = 1
+      let lastPage = 1
+      let guard = 0
 
-      const raw = res.data.services
-      const list = Array.isArray(raw) ? raw : (raw?.data ?? [])
-      const match = list.find((svc) => (svc.celebrity_id ?? svc.celebrity?.id) === celebrityId)
-      if (match?.id) return match.id
+      while (page <= lastPage && guard < 20) {
+        const res = await api.get<ServiceListPayload>('/services', {
+          params: { service_type: serviceType, page, per_page: 50 },
+        })
+
+        const raw = res.data.services
+        const list = Array.isArray(raw) ? raw : (raw?.data ?? [])
+        lastPage = Array.isArray(raw) ? 1 : Number(raw?.last_page ?? 1)
+
+        const match = list.find((svc) => (svc.celebrity_id ?? svc.celebrity?.id) === celebrityId)
+        if (match?.id) return match.id
+
+        page += 1
+        guard += 1
+      }
     }
 
     return null

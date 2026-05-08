@@ -94,6 +94,11 @@ const METHOD_ICONS: Record<string, string> = {
   gift_card: '🎁',
 }
 
+const getSafeProofUrl = (url: string | null): string | null => {
+  if (!url) return null
+  return /^\/storage\/payment-proofs\/[A-Za-z0-9_.\/-]+$/.test(url) ? url : null
+}
+
 /* ── Pending Confirmation Detail Modal ── */
 
 function PendingModal({
@@ -110,6 +115,7 @@ function PendingModal({
   const [note, setNote] = useState('')
   const [acting, setActing] = useState(false)
   const [err, setErr] = useState('')
+  const safeProofUrl = getSafeProofUrl(tx.proof_url)
 
   const act = async (fn: (note: string) => Promise<void>) => {
     setActing(true)
@@ -174,19 +180,19 @@ function PendingModal({
           )}
 
           {/* Proof image */}
-          {tx.proof_url && (
+          {safeProofUrl && (
             <div>
               <p className="text-[11px] uppercase tracking-widest text-slate-500 mb-2">Payment Proof</p>
-              {tx.proof_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+              {safeProofUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={tx.proof_url}
+                  src={safeProofUrl}
                   alt="Payment proof"
                   className="max-h-48 w-full rounded-xl object-contain border border-white/10 bg-[#05131b]"
                 />
               ) : (
                 <a
-                  href={tx.proof_url}
+                  href={safeProofUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 rounded-xl border border-mint/30 px-4 py-2 text-sm font-semibold text-mint hover:bg-mint/10"
@@ -418,9 +424,9 @@ export default function AdminPaymentsPage() {
                         </div>
                       )}
 
-                      {tx.proof_url && (
+                      {getSafeProofUrl(tx.proof_url) && (
                         <p className="text-xs text-mint">
-                          📎 <a href={tx.proof_url} target="_blank" rel="noreferrer" className="underline hover:text-mint/80">View proof</a>
+                          📎 <a href={getSafeProofUrl(tx.proof_url) ?? '#'} target="_blank" rel="noreferrer" className="underline hover:text-mint/80">View proof</a>
                         </p>
                       )}
 
