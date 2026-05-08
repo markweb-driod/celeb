@@ -100,7 +100,7 @@ const serviceStatusClass: Record<string, string> = {
 
 type ServiceFormProps = {
   initial?: Service
-  onSave: (data: Record<string, unknown>) => Promise<void>
+  onSave: (data: FormData) => Promise<void>
   onClose: () => void
 }
 
@@ -109,13 +109,13 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
     title: initial?.title ?? '',
     description: initial?.description ?? '',
     service_type: initial?.service_type ?? 'video_shoutout',
-    images_csv: initial?.images?.join(', ') ?? '',
     short_video_url: initial?.short_video_url ?? '',
     base_price: initial?.base_price ?? '',
     currency: initial?.currency ?? 'USD',
     max_delivery_days: initial?.max_delivery_days?.toString() ?? '3',
     status: initial?.status ?? 'active',
   })
+  const [imageFiles, setImageFiles] = useState<File[]>([])
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
 
@@ -124,18 +124,35 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true); setErr('')
-    const parsedImages = form.images_csv
-      .split(',')
-      .map((v) => v.trim())
-      .filter(Boolean)
+    if (imageFiles.length > 2) {
+      setErr('You can upload at most 2 images per service.')
+      setSaving(false)
+      return
+    }
+
+    const tooBig = imageFiles.find((file) => file.size > 2 * 1024 * 1024)
+    if (tooBig) {
+      setErr('Each image must be 2MB or smaller.')
+      setSaving(false)
+      return
+    }
+
+    const data = new FormData()
+    data.append('title', form.title)
+    data.append('description', form.description)
+    data.append('service_type', form.service_type)
+    data.append('short_video_url', form.short_video_url.trim())
+    data.append('base_price', form.base_price)
+    data.append('currency', form.currency)
+    data.append('max_delivery_days', form.max_delivery_days)
+    data.append('status', form.status)
+
+    imageFiles.forEach((file) => {
+      data.append('images_upload[]', file)
+    })
+
     try {
-      await onSave({
-        ...form,
-        images: parsedImages.length ? parsedImages : null,
-        short_video_url: form.short_video_url.trim() || null,
-        base_price: parseFloat(form.base_price),
-        max_delivery_days: parseInt(form.max_delivery_days) || null,
-      })
+      await onSave(data)
       onClose()
     } catch (e) {
       setErr(getApiErrorMessage(e))
@@ -197,13 +214,18 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
                 className="w-full resize-none rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40" />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Image URLs (comma-separated)</label>
+              <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Service Images (optional)</label>
               <input
-                value={form.images_csv}
-                onChange={e => set('images_csv', e.target.value)}
-                placeholder="https://...jpg, https://...png"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                onChange={e => setImageFiles(Array.from(e.target.files ?? []))}
                 className="w-full rounded-xl border border-white/10 bg-[#05131b] px-3 py-2 text-sm text-white outline-none focus:border-amber/40"
               />
+              <p className="mt-1 text-[11px] text-slate-500">Up to 2 images, max 2MB each. Images only (JPG, PNG, WEBP).</p>
+              {!!initial?.images?.length && imageFiles.length === 0 && (
+                <p className="mt-1 text-[11px] text-slate-500">Leave empty to keep existing service images.</p>
+              )}
             </div>
             <div className="sm:col-span-2">
               <label className="mb-1 block text-[11px] uppercase tracking-widest text-slate-500">Short Video URL (optional)</label>
@@ -334,14 +356,18 @@ export default function AdminCelebrityDetailPage() {
   }
 
   /* ── Service actions ── */
-  const addService = async (data: Record<string, unknown>) => {
-    await api.post(`/admin/celebrities/${id}/services`, data)
+  const addService = async (data: FormData) => {
+    await api.post(`/admin/celebrities/${id}/services`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
     await loadDetail()
     flash('Service added.')
   }
 
-  const editService = async (svcId: number, data: Record<string, unknown>) => {
-    await api.patch(`/admin/celebrities/${id}/services/${svcId}`, data)
+  const editService = async (svcId: number, data: FormData) => {
+    await api.patch(`/admin/celebrities/${id}/services/${svcId}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
     await loadDetail()
     flash('Service updated.')
   }

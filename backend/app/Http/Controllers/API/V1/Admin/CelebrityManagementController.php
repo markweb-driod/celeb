@@ -13,6 +13,7 @@ use App\Models\Service;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -116,11 +117,14 @@ class CelebrityManagementController extends Controller
             'stage_name'          => ['required', 'string', 'max:150'],
             'bio'                 => ['nullable', 'string', 'max:2000'],
             'category'            => ['nullable', 'string', 'max:100'],
-            'profile_image_url'   => ['nullable', 'url', 'max:500'],
+            'profile_photo'       => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'commission_rate'     => ['nullable', 'numeric', 'between:0,100'],
             'verification_status' => ['nullable', Rule::in(['pending', 'verified', 'rejected'])],
             'is_featured'         => ['nullable', 'boolean'],
         ]);
+
+        $profileImagePath = $request->file('profile_photo')->store('celebrity-profiles', 'public');
+        $profileImageUrl = Storage::disk('public')->url($profileImagePath);
 
         $user = User::create([
             'email'         => $data['email'],
@@ -135,7 +139,7 @@ class CelebrityManagementController extends Controller
             'slug'                => Str::slug($data['stage_name']) . '-' . $user->id,
             'bio'                 => $data['bio'] ?? null,
             'category'            => $data['category'] ?? null,
-            'profile_image_url'   => $data['profile_image_url'] ?? null,
+            'profile_image_url'   => $profileImageUrl,
             'commission_rate'     => $data['commission_rate'] ?? 20,
             'verification_status' => $data['verification_status'] ?? 'pending',
             'is_featured'         => $data['is_featured'] ?? false,
@@ -217,13 +221,25 @@ class CelebrityManagementController extends Controller
             'currency'          => ['nullable', 'string', 'max:3'],
             'max_delivery_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'status'            => ['nullable', Rule::in(['active', 'inactive', 'draft'])],
-            'images'            => ['nullable', 'array', 'max:8'],
-            'images.*'          => ['required', 'url', 'max:1000'],
+            'images_upload'     => ['nullable', 'array', 'max:2'],
+            'images_upload.*'   => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'short_video_url'   => ['nullable', 'url', 'max:1000'],
         ]);
 
+        $uploadedImageUrls = [];
+        if ($request->hasFile('images_upload')) {
+            foreach ($request->file('images_upload') as $image) {
+                $path = $image->store('service-images', 'public');
+                $uploadedImageUrls[] = Storage::disk('public')->url($path);
+            }
+        }
+
+        $payload = $data;
+        unset($payload['images_upload']);
+        $payload['images'] = $uploadedImageUrls ?: null;
+
         $service = $celebrity->services()->create([
-            ...$data,
+            ...$payload,
             'slug'     => Str::slug($data['title']) . '-' . time(),
             'currency' => $data['currency'] ?? 'USD',
             'status'   => $data['status'] ?? 'active',
@@ -244,12 +260,24 @@ class CelebrityManagementController extends Controller
             'currency'          => ['nullable', 'string', 'max:3'],
             'max_delivery_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'status'            => ['nullable', Rule::in(['active', 'inactive', 'draft'])],
-            'images'            => ['nullable', 'array', 'max:8'],
-            'images.*'          => ['required', 'url', 'max:1000'],
+            'images_upload'     => ['nullable', 'array', 'max:2'],
+            'images_upload.*'   => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'short_video_url'   => ['nullable', 'url', 'max:1000'],
         ]);
 
-        $service->update(array_filter($data, fn ($v) => !is_null($v)));
+        $payload = array_filter($data, fn ($v) => !is_null($v));
+        unset($payload['images_upload']);
+
+        if ($request->hasFile('images_upload')) {
+            $uploadedImageUrls = [];
+            foreach ($request->file('images_upload') as $image) {
+                $path = $image->store('service-images', 'public');
+                $uploadedImageUrls[] = Storage::disk('public')->url($path);
+            }
+            $payload['images'] = $uploadedImageUrls ?: null;
+        }
+
+        $service->update($payload);
 
         return response()->json(['service' => $service->fresh()]);
     }
