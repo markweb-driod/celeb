@@ -10,7 +10,9 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Extend transactions.status enum with pending_confirmation
-        DB::statement("ALTER TABLE transactions MODIFY COLUMN status ENUM('pending','pending_confirmation','completed','failed') NOT NULL DEFAULT 'pending'");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE transactions MODIFY COLUMN status ENUM('pending','pending_confirmation','completed','failed') NOT NULL DEFAULT 'pending'");
+        }
 
         // 2. Add new columns to transactions
         Schema::table('transactions', function (Blueprint $table) {
@@ -23,7 +25,9 @@ return new class extends Migration
         });
 
         // 3. Add awaiting_confirmation to orders.status
-        DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending','awaiting_confirmation','confirmed','in_progress','completed','cancelled','refunded') NOT NULL DEFAULT 'pending'");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending','awaiting_confirmation','confirmed','in_progress','completed','cancelled','refunded') NOT NULL DEFAULT 'pending'");
+        }
     }
 
     public function down(): void
@@ -32,9 +36,10 @@ return new class extends Migration
             $table->dropColumn(['proof_url', 'gift_card_code', 'payment_meta', 'admin_note', 'confirmed_by', 'confirmed_at']);
         });
 
-        DB::statement("ALTER TABLE transactions MODIFY COLUMN status ENUM('pending','completed','failed') NOT NULL DEFAULT 'pending'");
-
-        DB::statement("UPDATE orders SET status = 'pending' WHERE status = 'awaiting_confirmation'");
-        DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending','confirmed','in_progress','completed','cancelled','refunded') NOT NULL DEFAULT 'pending'");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE transactions MODIFY COLUMN status ENUM('pending','completed','failed') NOT NULL DEFAULT 'pending'");
+            DB::statement("UPDATE orders SET status = 'pending' WHERE status = 'awaiting_confirmation'");
+            DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending','confirmed','in_progress','completed','cancelled','refunded') NOT NULL DEFAULT 'pending'");
+        }
     }
 };

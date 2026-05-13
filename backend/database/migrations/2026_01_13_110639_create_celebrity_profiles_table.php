@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('stage_name');
             $table->string('slug')->unique();
             $table->text('bio')->nullable();
-            $table->string('category');
+            $table->string('category')->nullable();
             $table->enum('verification_status', ['pending', 'verified', 'rejected'])->default('pending');
             $table->text('profile_image_url')->nullable();
             $table->text('cover_image_url')->nullable();
@@ -25,7 +25,9 @@ return new class extends Migration
             $table->decimal('commission_rate', 5, 2)->default(15.00);
             $table->boolean('is_featured')->default(false);
             $table->timestamps();
-            $table->fullText(['stage_name', 'bio']);
+            if (\DB::getDriverName() !== 'sqlite') {
+                $table->fullText(['stage_name', 'bio']);
+            }
         });
     }
 

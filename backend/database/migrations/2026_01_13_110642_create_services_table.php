@@ -28,7 +28,9 @@ return new class extends Migration
             $table->integer('total_sold')->default(0);
             $table->integer('view_count')->default(0);
             $table->timestamps();
-            $table->fullText(['title', 'description']);
+            if (\DB::getDriverName() !== 'sqlite') {
+                $table->fullText(['title', 'description']);
+            }
         });
     }
 

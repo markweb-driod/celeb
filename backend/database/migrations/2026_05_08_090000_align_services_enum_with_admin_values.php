@@ -7,6 +7,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return; // SQLite uses string columns; enum changes are no-ops
+        }
+
         DB::statement("ALTER TABLE services MODIFY COLUMN service_type ENUM(
             'fan_card',
             'video_message',
@@ -34,6 +38,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement("UPDATE services SET service_type = 'shoutout' WHERE service_type = 'video_shoutout'");
         DB::statement("UPDATE services SET service_type = 'private_event' WHERE service_type = 'live_session'");
         DB::statement("UPDATE services SET service_type = 'meet_greet' WHERE service_type = 'meet_and_greet'");

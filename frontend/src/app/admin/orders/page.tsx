@@ -51,7 +51,7 @@ const statusClass: Record<string, string> = {
 function OrderDetailModal({ order, onClose, onStatusChange }: {
   order: AdminOrder
   onClose: () => void
-  onStatusChange: (id: number, status: string) => Promise<void>
+  onStatusChange: (id: number, status: string, notes: string) => Promise<void>
 }) {
   const [status, setStatus] = useState(order.status)
   const [notes, setNotes] = useState(order.notes ?? '')
@@ -61,7 +61,7 @@ function OrderDetailModal({ order, onClose, onStatusChange }: {
   const save = async () => {
     setSaving(true); setErr('')
     try {
-      await onStatusChange(order.id, status)
+      await onStatusChange(order.id, status, notes)
       onClose()
     } catch (e) {
       setErr(getApiErrorMessage(e))
@@ -228,10 +228,10 @@ export default function AdminOrdersPage() {
     }
   }
 
-  const updateStatus = async (id: number, status: string) => {
+  const updateStatus = async (id: number, status: string, notes?: string) => {
     setActionId(id)
     try {
-      await api.patch(`/orders/${id}/status`, { status })
+      await api.patch(`/orders/${id}/status`, { status, ...(notes !== undefined ? { notes } : {}) })
       await loadOrders(filterStatus, page)
       flash(`Order status → ${status}.`)
     } finally {

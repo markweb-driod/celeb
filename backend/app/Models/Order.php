@@ -22,6 +22,7 @@ class Order extends Model
         'total_amount',
         'currency',
         'customization_data',
+        'notes',
     ];
 
     protected $casts = [

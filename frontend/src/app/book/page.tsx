@@ -13,7 +13,8 @@ type Service = {
   service_type: string
   base_price: string
   currency: string
-  delivery_days: number
+  delivery_days: number | null
+  max_delivery_days: number | null
   celebrity_profile: {
     id: number
     stage_name: string
@@ -294,7 +295,7 @@ function BookingPageContent() {
                 </div>
                 <div className="flex justify-between text-slate-500">
                   <span>Delivery</span>
-                  <span className="text-white">Within {service.delivery_days} day{service.delivery_days !== 1 ? 's' : ''}</span>
+                  <span className="text-white">Within {service.max_delivery_days ?? service.delivery_days} day{(service.max_delivery_days ?? service.delivery_days) !== 1 ? 's' : ''}</span>
                 </div>
                 <div className="flex justify-between border-t border-white/[0.06] pt-2 font-bold">
                   <span className="text-white">Total</span>

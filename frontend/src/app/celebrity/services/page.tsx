@@ -199,6 +199,12 @@ export default function CelebrityServicesPage() {
                             {formatMoney(service.base_price, service.currency)}
                           </span>
                           <div className="flex flex-wrap justify-end gap-2">
+                            <Link
+                              href={`/celebrity/services/${service.id}/edit`}
+                              className="rounded-lg border border-amber/20 bg-amber/10 px-3 py-1.5 text-[11px] font-semibold text-amber transition hover:border-amber/40"
+                            >
+                              Edit
+                            </Link>
                             <button
                               type="button"
                               onClick={() => void updateStatus(service, service.status === 'active' ? 'paused' : 'active')}

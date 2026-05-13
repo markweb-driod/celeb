@@ -164,7 +164,7 @@ export default function FanSubscriptionsPage() {
                   <p className="font-display text-sm font-bold text-white">{celeb.stage_name}</p>
                   <p className="text-xs text-slate-500">{celeb.category}</p>
                   {celeb.min_price && (
-                    <p className="mt-0.5 text-xs text-mint-soft">from ${Math.round(Number(celeb.min_price))}/session</p>
+                    <p className="mt-0.5 text-xs text-mint-soft">from {fmt(Number(celeb.min_price))}/session</p>
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-2">

@@ -168,7 +168,7 @@ function CelebrityProfileContent() {
                 )}
                 {profile.min_price && (
                   <span className="text-slate-400">
-                    Starting from <span className="font-semibold text-white">${profile.min_price}</span>
+                    Starting from <span className="font-semibold text-white">{fmt(profile.min_price, 'USD')}</span>
                   </span>
                 )}
               </div>

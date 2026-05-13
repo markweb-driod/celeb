@@ -18,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'is_fan' => \App\Http\Middleware\IsFan::class,
             'is_admin' => \App\Http\Middleware\IsAdmin::class,
         ]);
+        $middleware->api(prepend: [
+            \App\Http\Middleware\ForceJsonResponse::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

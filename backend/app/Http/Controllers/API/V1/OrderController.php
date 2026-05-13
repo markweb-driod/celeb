@@ -49,7 +49,9 @@ class OrderController extends Controller
         
         // Calculate fees
         $subtotal = $service->base_price; // Add logic for tiered/hourly if needed
-        $platformFee = $subtotal * ($service->celebrity->commission_rate / 100);
+        $celebrity = $service->celebrity;
+        $commissionRate = (float) ($celebrity->commission_rate ?? 20);
+        $platformFee = $subtotal * ($commissionRate / 100);
         $totalAmount = $subtotal + $platformFee;
 
         try {

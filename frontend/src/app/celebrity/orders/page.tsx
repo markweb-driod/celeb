@@ -133,7 +133,7 @@ export default function CelebrityOrdersPage() {
             {[
               { label: 'Total orders', value: orders.length, icon: '📦', color: 'from-amber/20 to-orange-600/10' },
               { label: 'Active orders', value: activeOrders, icon: '🎬', color: 'from-violet-500/20 to-purple-600/10' },
-              { label: 'Completed revenue', value: `$${totalRevenue.toFixed(0)}`, icon: '💰', color: 'from-emerald-500/20 to-green-600/10' },
+              { label: 'Completed revenue', value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(totalRevenue), icon: '💰', color: 'from-emerald-500/20 to-green-600/10' },
             ].map((stat) => (
               <div key={stat.label} className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-[#071e29]/80 p-5">
                 <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-60`} />

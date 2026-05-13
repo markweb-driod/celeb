@@ -34,6 +34,6 @@ class Conversation extends Model
 
     public function latestMessage(): HasOne
     {
-        return $this->hasOne(Message::class)->latestOfMany('id');
+        return $this->hasOne(Message::class)->latest('id');
     }
 }

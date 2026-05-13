@@ -159,7 +159,7 @@ function PendingModal({
             </div>
             <div>
               <p className="text-[11px] uppercase tracking-widest text-slate-500">Amount</p>
-              <p className="font-bold text-amber">${parseFloat(tx.amount).toFixed(2)} {tx.currency}</p>
+              <p className="font-bold text-amber">{new Intl.NumberFormat('en-US', { style: 'currency', currency: tx.currency || 'USD', minimumFractionDigits: 2 }).format(parseFloat(tx.amount))}</p>
             </div>
             <div>
               <p className="text-[11px] uppercase tracking-widest text-slate-500">Method</p>
@@ -354,9 +354,9 @@ export default function AdminPaymentsPage() {
           {txSummary && (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               {[
-                { label: 'Total collected',   value: `$${txSummary.total_payments.toFixed(2)}`,          color: 'text-emerald-400' },
-                { label: 'Total refunded',     value: `$${txSummary.total_refunds.toFixed(2)}`,           color: 'text-red-400' },
-                { label: 'Net revenue',        value: `$${(txSummary.total_payments - txSummary.total_refunds).toFixed(2)}`, color: 'text-white' },
+                { label: 'Total collected',   value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(txSummary.total_payments),          color: 'text-emerald-400' },
+                { label: 'Total refunded',     value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(txSummary.total_refunds),           color: 'text-red-400' },
+                { label: 'Net revenue',        value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(txSummary.total_payments - txSummary.total_refunds), color: 'text-white' },
                 { label: 'Awaiting review',    value: String(txSummary.pending_confirmation_count),       color: 'text-amber', alert: txSummary.pending_confirmation_count > 0 },
                 { label: 'Failed payments',    value: String(txSummary.failed_count),                     color: 'text-red-400' },
               ].map((card) => (
