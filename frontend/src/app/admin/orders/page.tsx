@@ -36,6 +36,9 @@ type DetailResponse = { order: AdminOrder }
 
 const STATUS_OPTIONS = ['pending', 'awaiting_confirmation', 'confirmed', 'in_progress', 'completed', 'cancelled', 'refunded']
 
+const fmt = (amount: string | number, currency = 'USD') =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(amount))
+
 const statusClass: Record<string, string> = {
   pending:     'border-amber/30 bg-amber/10 text-amber',
   awaiting_confirmation: 'border-orange-400/30 bg-orange-500/10 text-orange-300',
@@ -102,9 +105,9 @@ function OrderDetailModal({ order, onClose, onStatusChange }: {
 
           {/* Financials */}
           <div className="rounded-xl border border-white/[0.07] bg-[#05131b] p-3 space-y-0.5">
-            <Row label="Subtotal"     val={`${order.currency} ${Number(order.subtotal ?? 0).toFixed(2)}`} />
-            <Row label="Platform fee" val={`${order.currency} ${Number(order.platform_fee ?? 0).toFixed(2)}`} />
-            <Row label="Total"        val={<span className="font-bold text-white">{order.currency} {Number(order.total_amount).toFixed(2)}</span>} />
+            <Row label="Subtotal"     val={fmt(order.subtotal ?? 0, order.currency)} />
+            <Row label="Platform fee" val={fmt(order.platform_fee ?? 0, order.currency)} />
+            <Row label="Total"        val={<span className="font-bold text-white">{fmt(order.total_amount, order.currency)}</span>} />
             {order.transaction && (
               <>
                 <Row label="Payment"    val={order.transaction.payment_method ?? '—'} />
@@ -178,6 +181,7 @@ export default function AdminOrdersPage() {
   const [lastPage, setLastPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [filterStatus, setFilterStatus] = useState('')
+  const [searchQ, setSearchQ] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -189,9 +193,10 @@ export default function AdminOrdersPage() {
 
   const flash = (msg: string) => { setMessage(msg); setTimeout(() => setMessage(''), 3000) }
 
-  const loadOrders = async (status: string, p: number) => {
+  const loadOrders = async (status: string, p: number, q = searchQ) => {
     const params: Record<string, string | number> = { page: p, per_page: 20 }
     if (status) params.status = status
+    if (q.trim()) params.q = q.trim()
     const res = await api.get<OrdersResponse>('/orders', { params })
     setOrders(res.data.orders.data)
     setLastPage(res.data.orders.last_page)
@@ -281,14 +286,28 @@ export default function AdminOrdersPage() {
 
           {/* Filters */}
           <div className="flex flex-wrap gap-2">
+            <input
+              type="text"
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { setPage(1); void loadOrders(filterStatus, 1, searchQ) } }}
+              placeholder="Search order #…"
+              className="rounded-xl border border-white/10 bg-[#071e29] px-3 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-amber/40 w-44"
+            />
             <select
               value={filterStatus}
-              onChange={e => { setFilterStatus(e.target.value); setPage(1); void loadOrders(e.target.value, 1) }}
+              onChange={e => { setFilterStatus(e.target.value); setPage(1); void loadOrders(e.target.value, 1, searchQ) }}
               className="rounded-xl border border-white/10 bg-[#071e29] px-3 py-2 text-sm text-white"
             >
               <option value="">All statuses</option>
               {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
             </select>
+            <button
+              onClick={() => { setPage(1); void loadOrders(filterStatus, 1, searchQ) }}
+              className="rounded-xl bg-amber px-4 py-2 text-sm font-semibold text-[#07161e]"
+            >
+              Search
+            </button>
           </div>
 
           {/* Table */}
@@ -323,7 +342,7 @@ export default function AdminOrdersPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 font-semibold text-white">
-                      {order.currency} {Number(order.total_amount).toFixed(2)}
+                      {fmt(order.total_amount, order.currency)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">

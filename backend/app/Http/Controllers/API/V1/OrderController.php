@@ -18,14 +18,18 @@ class OrderController extends Controller
     {
         $user = $request->user();
         $validated = $request->validate([
-            'status' => ['nullable', 'string', 'in:pending,awaiting_confirmation,confirmed,in_progress,completed,cancelled,refunded'],
+            'status'   => ['nullable', 'string', 'in:pending,awaiting_confirmation,confirmed,in_progress,completed,cancelled,refunded'],
             'per_page' => ['nullable', 'integer', 'between:5,100'],
+            'q'        => ['nullable', 'string', 'max:120'],
         ]);
         
         $orders = Order::query()
             ->when($user->user_type === 'fan', fn($q) => $q->where('fan_id', $user->fanProfile->id))
             ->when($user->user_type === 'celebrity', fn($q) => $q->where('celebrity_id', $user->celebrityProfile->id))
             ->when($validated['status'] ?? null, fn($q, $status) => $q->where('status', $status))
+            ->when($validated['q'] ?? null, fn($q, $search) =>
+                $q->where('order_number', 'like', '%' . $search . '%')
+            )
             ->with(['service', 'celebrity', 'fan'])
             ->latest()
             ->paginate((int) ($validated['per_page'] ?? 15));
@@ -48,11 +52,14 @@ class OrderController extends Controller
         }
         
         // Calculate fees
-        $subtotal = $service->base_price; // Add logic for tiered/hourly if needed
-        $celebrity = $service->celebrity;
+        // Fan pays exactly the service's listed price (base_price = total_amount).
+        // The platform_fee is the share the platform keeps from that payment.
+        // Celebrity payout = total_amount - platform_fee.
+        $subtotal     = (float) $service->base_price;
+        $celebrity    = $service->celebrity;
         $commissionRate = (float) ($celebrity->commission_rate ?? 20);
-        $platformFee = $subtotal * ($commissionRate / 100);
-        $totalAmount = $subtotal + $platformFee;
+        $platformFee  = round($subtotal * ($commissionRate / 100), 2);
+        $totalAmount  = $subtotal; // Fan pays exactly the listed price — no extra fees on top
 
         try {
             DB::beginTransaction();

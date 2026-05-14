@@ -98,7 +98,8 @@ const getSafeProofUrl = (url: string | null): string | null => {
   if (!url) return null
   return /^\/storage\/payment-proofs\/[A-Za-z0-9_.\/-]+$/.test(url) ? url : null
 }
-
+const fmt = (amount: number | string, currency = 'USD') =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(amount))
 /* ── Pending Confirmation Detail Modal ── */
 
 function PendingModal({
@@ -333,11 +334,13 @@ export default function AdminPaymentsPage() {
   const handleConfirm = async (txId: number, note: string) => {
     await api.post(`/admin/transactions/${txId}/confirm`, { admin_note: note })
     await loadPending()
+    if (tab === 'all') await loadTransactions(q, txType, txStatus, txPage)
   }
 
   const handleReject = async (txId: number, note: string) => {
     await api.post(`/admin/transactions/${txId}/reject`, { admin_note: note })
     await loadPending()
+    if (tab === 'all') await loadTransactions(q, txType, txStatus, txPage)
   }
 
   return (
@@ -403,7 +406,7 @@ export default function AdminPaymentsPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <p className="font-mono text-xs text-slate-500">{tx.transaction_number}</p>
-                          <p className="font-bold text-amber text-lg">${parseFloat(tx.amount).toFixed(2)} {tx.currency}</p>
+                          <p className="font-bold text-amber text-lg">{fmt(tx.amount, tx.currency)}</p>
                           <p className="text-sm text-white mt-0.5">{METHOD_ICONS[tx.payment_method ?? ''] ?? '💳'} {tx.payment_method?.replace(/_/g, ' ') ?? 'Unknown method'}</p>
                         </div>
                         <span className="inline-block rounded-full border border-amber/30 bg-amber/10 px-2 py-0.5 text-[11px] font-semibold text-amber">
@@ -509,7 +512,7 @@ export default function AdminPaymentsPage() {
                           <div>{tx.user?.email ?? '—'}</div>
                           {tx.order && <div className="font-mono">{tx.order.order_number}</div>}
                         </td>
-                        <td className="px-4 py-3 font-semibold text-white">${parseFloat(tx.amount).toFixed(2)} <span className="text-slate-500 text-xs">{tx.currency}</span></td>
+                        <td className="px-4 py-3 font-semibold text-white">{fmt(tx.amount, tx.currency)}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${txStatusClass[tx.status] ?? ''}`}>
                             {tx.status.replace(/_/g, ' ')}
@@ -548,9 +551,9 @@ export default function AdminPaymentsPage() {
               {payoutSummary && (
                 <div className="grid gap-4 sm:grid-cols-4">
                   {[
-                    { label: 'Total gross paid', value: `$${payoutSummary.total_gross.toFixed(2)}`, color: 'text-white' },
-                    { label: 'Platform fees',     value: `$${payoutSummary.total_fees.toFixed(2)}`,  color: 'text-amber' },
-                    { label: 'Net to creators',   value: `$${payoutSummary.total_net.toFixed(2)}`,   color: 'text-emerald-400' },
+                    { label: 'Total gross paid', value: fmt(payoutSummary.total_gross), color: 'text-white' },
+                    { label: 'Platform fees',     value: fmt(payoutSummary.total_fees),  color: 'text-amber' },
+                    { label: 'Net to creators',   value: fmt(payoutSummary.total_net),   color: 'text-emerald-400' },
                     { label: 'Pending payouts',   value: String(payoutSummary.pending_count),        color: 'text-amber' },
                   ].map((c) => (
                     <div key={c.label} className="rounded-2xl border border-white/[0.07] bg-[#071e29]/70 p-4">
@@ -596,9 +599,9 @@ export default function AdminPaymentsPage() {
                           <div className="font-semibold text-white">{po.celebrity?.stage_name ?? '—'}</div>
                           <div className="text-xs text-slate-500">{po.celebrity?.user?.email ?? ''}</div>
                         </td>
-                        <td className="px-4 py-3 text-slate-300">${parseFloat(po.gross_amount).toFixed(2)}</td>
-                        <td className="px-4 py-3 text-slate-500">${parseFloat(po.platform_fees).toFixed(2)}</td>
-                        <td className="px-4 py-3 font-semibold text-emerald-400">${parseFloat(po.net_amount).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-slate-300">{fmt(po.gross_amount)}</td>
+                        <td className="px-4 py-3 text-slate-500">{fmt(po.platform_fees)}</td>
+                        <td className="px-4 py-3 font-semibold text-emerald-400">{fmt(po.net_amount)}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${payoutStatusClass[po.status] ?? ''}`}>
                             {po.status}

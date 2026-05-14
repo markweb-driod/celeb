@@ -108,7 +108,7 @@ export default function FanDashboardPage() {
             {[
               { label: 'Total bookings', value: totalOrders, icon: '📦', sub: 'All time',          color: 'from-mint/20 to-teal-600/10' },
               { label: 'Active orders',  value: active,      icon: '🔄', sub: 'In progress',       color: 'from-violet-500/20 to-purple-600/10' },
-              { label: 'Total spent',    value: `$${spent.toFixed(0)}`, icon: '💰', sub: 'Completed', color: 'from-amber/20 to-orange-600/10' },
+              { label: 'Total spent',    value: fmt(String(spent), 'USD'), icon: '💰', sub: 'Completed', color: 'from-amber/20 to-orange-600/10' },
             ].map((s) => (
               <div key={s.label} className={`relative overflow-hidden rounded-2xl border border-white/[0.07] bg-[#071e29]/80 p-5`}>
                 <div className={`absolute inset-0 bg-gradient-to-br ${s.color} opacity-60`} />

@@ -38,6 +38,9 @@ type MonitoringResponse = {
   }
 }
 
+const fmt = (amount: number, currency = 'USD') =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount)
+
 const quickLinks = [
   { href: '/admin/celebrities', label: 'Celebrities',  icon: '⭐', desc: 'Verify & manage creators' },
   { href: '/admin/fans',        label: 'Fans',         icon: '🎭', desc: 'Fan accounts & spending' },
@@ -126,8 +129,8 @@ export default function AdminDashboardPage() {
             {[
               { label: 'Total users',        value: s?.users_total ?? 0,                                     sub: `${s?.users_by_status.active ?? 0} active`,      color: 'text-white' },
               { label: 'Total orders',        value: s?.orders_total ?? 0,                                    sub: `${s?.active_subscriptions ?? 0} subscriptions`, color: 'text-white' },
-              { label: 'Net revenue',         value: `$${(s?.net_revenue ?? 0).toFixed(2)}`,                  sub: 'after refunds',                                  color: 'text-amber' },
-              { label: 'Platform fees',       value: `$${(s?.platform_fees_collected ?? 0).toFixed(2)}`,      sub: 'commissions earned',                             color: 'text-emerald-400' },
+              { label: 'Net revenue',         value: fmt(s?.net_revenue ?? 0),                  sub: 'after refunds',                                  color: 'text-amber' },
+              { label: 'Platform fees',       value: fmt(s?.platform_fees_collected ?? 0),      sub: 'commissions earned',                             color: 'text-emerald-400' },
             ].map((card) => (
               <div key={card.label} className="rounded-2xl border border-white/[0.07] bg-[#071e29]/70 p-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{card.label}</p>
@@ -248,7 +251,7 @@ export default function AdminDashboardPage() {
                     <span className="w-5 text-xs text-slate-600 font-bold">{i + 1}</span>
                     <span className="flex-1 text-sm text-slate-300">{creator.stage_name}</span>
                     <span className="text-xs text-slate-500">{creator.completed_orders} orders</span>
-                    <span className="text-sm font-semibold text-amber">${(creator.completed_revenue ?? 0).toFixed(2)}</span>
+                    <span className="text-sm font-semibold text-amber">{fmt(creator.completed_revenue ?? 0)}</span>
                   </div>
                 ))}
               </div>

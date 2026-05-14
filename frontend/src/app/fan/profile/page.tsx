@@ -32,6 +32,7 @@ export default function FanProfilePage() {
   const router = useRouter()
   const [user, setUser]             = useState<AuthUser | null>(null)
   const [displayName, setDisplayName] = useState('')
+  const [savedDisplayName, setSavedDisplayName] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [existingAvatarUrl, setExistingAvatarUrl] = useState<string | null>(null)
   const [loading, setLoading]       = useState(true)
@@ -49,6 +50,7 @@ export default function FanProfilePage() {
         setUser(me.data)
         const p = await api.get<ProfilePayload>('/fan/profile')
         setDisplayName(p.data.profile.display_name ?? '')
+        setSavedDisplayName(p.data.profile.display_name ?? '')
         setExistingAvatarUrl(p.data.profile.avatar_url ?? null)
       } catch (e) {
         setError(getApiErrorMessage(e))
@@ -179,7 +181,7 @@ export default function FanProfilePage() {
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => { setError(''); setSuccess('') }}
+                  onClick={() => { setError(''); setSuccess(''); setDisplayName(savedDisplayName); setAvatarFile(null) }}
                   className="rounded-xl border border-white/10 px-5 py-2.5 text-sm text-slate-400 transition hover:text-white"
                 >
                   Reset

@@ -76,6 +76,9 @@ const statusColors: Record<string, string> = {
   refunded:  'bg-slate-500',
 }
 
+const fmt = (amount: number, currency = 'USD') =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount)
+
 export default function AdminAnalyticsPage() {
   const router = useRouter()
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -120,10 +123,10 @@ export default function AdminAnalyticsPage() {
           {/* KPI row 1 — revenue */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { label: 'Gross revenue',    value: `$${(kpis?.total_gross_revenue ?? 0).toFixed(2)}`,  sub: 'all time payments',   color: 'text-white' },
-              { label: 'Net revenue',      value: `$${(kpis?.net_revenue ?? 0).toFixed(2)}`,          sub: 'after refunds',       color: 'text-emerald-400' },
-              { label: 'Platform fees',    value: `$${(kpis?.platform_fees ?? 0).toFixed(2)}`,        sub: 'earned commissions',  color: 'text-amber' },
-              { label: 'Total refunds',    value: `$${(kpis?.total_refunds ?? 0).toFixed(2)}`,        sub: 'refunded to users',   color: 'text-red-400' },
+              { label: 'Gross revenue',    value: fmt(kpis?.total_gross_revenue ?? 0),  sub: 'all time payments',   color: 'text-white' },
+              { label: 'Net revenue',      value: fmt(kpis?.net_revenue ?? 0),          sub: 'after refunds',       color: 'text-emerald-400' },
+              { label: 'Platform fees',    value: fmt(kpis?.platform_fees ?? 0),        sub: 'earned commissions',  color: 'text-amber' },
+              { label: 'Total refunds',    value: fmt(kpis?.total_refunds ?? 0),        sub: 'refunded to users',   color: 'text-red-400' },
             ].map((card) => (
               <div key={card.label} className="rounded-2xl border border-white/[0.07] bg-[#071e29]/70 p-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{card.label}</p>
@@ -160,7 +163,7 @@ export default function AdminAnalyticsPage() {
                     {monthly.map((m) => (
                       <div key={m.month} className="text-center">
                         <div className="text-slate-500">{m.month.replace(' 20', " '")}</div>
-                        <div className="text-emerald-400">${m.net.toFixed(0)}</div>
+                        <div className="text-emerald-400">{fmt(m.net)}</div>
                       </div>
                     ))}
                   </div>
@@ -225,7 +228,7 @@ export default function AdminAnalyticsPage() {
                           style={{ width: `${(parseFloat(cat.revenue) / parseFloat((data?.top_categories ?? [])[0]?.revenue ?? '1')) * 100}%` }}
                         />
                       </div>
-                      <span className="w-16 text-right text-xs text-slate-400">${parseFloat(cat.revenue).toFixed(0)}</span>
+                      <span className="w-16 text-right text-xs text-slate-400">{fmt(parseFloat(cat.revenue))}</span>
                     </div>
                   ))}
                 </div>
@@ -255,7 +258,7 @@ export default function AdminAnalyticsPage() {
                         <div className="text-xs text-slate-500">{celeb.user?.email ?? ''}</div>
                       </td>
                       <td className="py-2.5 text-slate-300">{celeb.completed_orders}</td>
-                      <td className="py-2.5 font-bold text-amber">${parseFloat(celeb.total_revenue ?? '0').toFixed(2)}</td>
+                      <td className="py-2.5 font-bold text-amber">{fmt(parseFloat(celeb.total_revenue ?? '0'))}</td>
                     </tr>
                   ))}
                 </tbody>

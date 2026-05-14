@@ -135,7 +135,7 @@ export default function CelebrityDashboardPage() {
               { label: 'Total services', value: services.length, icon: '🎬', color: 'from-amber/20 to-orange-600/10' },
               { label: 'Active services', value: activeServices, icon: '✅', color: 'from-emerald-500/20 to-green-600/10' },
               { label: 'Total sold', value: totalSold, icon: '🛒', color: 'from-violet-500/20 to-purple-600/10' },
-              { label: 'Revenue (recent)', value: `$${revenue.toFixed(0)}`, icon: '💰', color: 'from-mint/20 to-teal-600/10' },
+              { label: 'Revenue (recent)', value: fmt(String(revenue), 'USD'), icon: '💰', color: 'from-mint/20 to-teal-600/10' },
             ].map((s) => (
               <div key={s.label} className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-[#071e29]/80 p-5">
                 <div className={`absolute inset-0 bg-gradient-to-br ${s.color} opacity-60`} />

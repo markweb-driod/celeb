@@ -207,7 +207,7 @@ export default function FanChatPage() {
                 >
                   <p className="font-semibold text-white">{item.celebrity_name}</p>
                   <p className="text-xs text-slate-400">{item.service_title}</p>
-                  <p className="mt-1 text-xs text-mint-soft">{item.currency} {item.subscription_price.toFixed(2)} / month</p>
+                  <p className="mt-1 text-xs text-mint-soft">{new Intl.NumberFormat('en-US', { style: 'currency', currency: item.currency || 'USD' }).format(item.subscription_price)} / month</p>
                 </button>
               ))}
 

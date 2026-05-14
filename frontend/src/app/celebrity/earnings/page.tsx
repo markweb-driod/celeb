@@ -28,12 +28,12 @@ type OrdersPayload = { orders: { data: Order[] } }
 type ServicesPayload = { services: Service[] }
 
 const navItems = [
-  { href: '/celebrity/dashboard', label: 'Overview', icon: 'OV' },
-  { href: '/celebrity/services', label: 'Services', icon: 'SV' },
-  { href: '/celebrity/orders', label: 'Orders', icon: 'OR' },
-  { href: '/celebrity/earnings', label: 'Earnings', icon: 'EC' },
-  { href: '/celebrity/chat',      label: 'Fan Chat',   icon: 'CH' },
-  { href: '/celebrity/profile', label: 'Profile', icon: 'PR' },
+  { href: '/celebrity/dashboard', label: 'Overview',  icon: '🏠' },
+  { href: '/celebrity/services',  label: 'Services',   icon: '🎬' },
+  { href: '/celebrity/orders',    label: 'Orders',     icon: '📦' },
+  { href: '/celebrity/earnings',  label: 'Earnings',   icon: '💰' },
+  { href: '/celebrity/chat',      label: 'Fan Chat',   icon: '💬' },
+  { href: '/celebrity/profile',   label: 'Profile',    icon: '⭐' },
 ]
 
 const formatMoney = (amount: number, currency = 'USD') =>
